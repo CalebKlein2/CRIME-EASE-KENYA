@@ -1,6 +1,7 @@
 import { Button } from "./ui/button";
 import { Shield, FileText, MessageSquare, Bell } from "lucide-react";
 import { Link } from "react-router-dom";
+import { SignedIn, SignedOut } from "@clerk/clerk-react";
 import Navbar from "./Navbar";
 import EmergencySOSButton from "./EmergencySOSButton";
 
@@ -21,9 +22,16 @@ export default function LandingPage() {
               cases with complete anonymity when needed.
             </p>
             <div className="space-x-4">
-              <Button size="lg" asChild>
-                <Link to="/login">Report a Crime</Link>
-              </Button>
+              <SignedIn>
+                <Button size="lg" asChild>
+                  <Link to="/report">Report a Crime</Link>
+                </Button>
+              </SignedIn>
+              <SignedOut>
+                <Button size="lg" asChild>
+                  <Link to="/login">Report a Crime</Link>
+                </Button>
+              </SignedOut>
               <Button size="lg" variant="outline" asChild>
                 <Link to="/anonymous">Report Anonymously</Link>
               </Button>
@@ -81,7 +89,7 @@ export default function LandingPage() {
 
       <footer className="bg-gray-50 border-t py-12">
         <div className="container mx-auto px-4 text-center text-gray-600">
-          <p>© 2024 CrimeEase. All rights reserved.</p>
+          <p> 2024 CrimeEase. All rights reserved.</p>
         </div>
       </footer>
     </div>

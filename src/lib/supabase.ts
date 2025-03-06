@@ -38,6 +38,55 @@ const mockData = {
   ]
 };
 
+interface PoliceStation {
+  id: string;
+  name: string;
+  location: string;
+  latitude: number;
+  longitude: number;
+  contact: string;
+}
+
+// Mock police station data
+const mockStationData: PoliceStation[] = [
+  {
+    id: '1',
+    name: 'Central Police Station Nairobi',
+    location: 'Nairobi CBD',
+    latitude: -1.2833,
+    longitude: 36.8167,
+    contact: '+254-20-2222222'
+  },
+  {
+    id: '2',
+    name: 'Kilimani Police Station',
+    location: 'Kilimani',
+    latitude: -1.2906,
+    longitude: 36.7833,
+    contact: '+254-20-2333333'
+  },
+  {
+    id: '3',
+    name: 'Parklands Police Station',
+    location: 'Parklands',
+    latitude: -1.2667,
+    longitude: 36.8000,
+    contact: '+254-20-2444444'
+  },
+  {
+    id: '4',
+    name: 'Gigiri Police Station',
+    location: 'Gigiri',
+    latitude: -1.2333,
+    longitude: 36.8000,
+    contact: '+254-20-2555555'
+  }
+];
+
+export const mockPoliceStations = async (): Promise<PoliceStation[]> => {
+  return mockStationData;
+};
+
 // Mock Supabase client for development
 const mockSupabase = {
   auth: {

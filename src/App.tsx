@@ -7,6 +7,8 @@ import LoginPage from "./components/auth/LoginPage";
 import SignUpPage from "./components/auth/SignUpPage";
 import Home from "./components/home";
 import AnonymousReport from "./components/AnonymousReport";
+import ReportCrimeForm from "./components/ReportCrimeForm";
+import { PoliceStationFinder } from './components/maps/PoliceStationFinder';
 
 export default function App() {
   return (
@@ -36,6 +38,16 @@ export default function App() {
 
         {/* Protected routes */}
         <Route
+          path="/report"
+          element={
+            <SignedIn>
+              <div className="container mx-auto py-8 flex justify-center">
+                <ReportCrimeForm />
+              </div>
+            </SignedIn>
+          }
+        />
+        <Route
           path="/admin/*"
           element={
             <SignedIn>
@@ -50,6 +62,14 @@ export default function App() {
               <Home />
             </SignedIn>
           }
+        />
+        <Route 
+          path="/find-station" 
+          element={
+            <SignedIn>
+              <PoliceStationFinder />
+            </SignedIn>
+          } 
         />
 
         {/* Catch-all redirect */}
