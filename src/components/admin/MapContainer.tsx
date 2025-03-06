@@ -13,12 +13,12 @@ interface MapContainerProps {
   onMarkerClick?: (location: Location) => void;
 }
 
-export default function MapContainer({
+export const MapContainer = ({
   center = { lat: -1.2921, lng: 36.8219 }, // Default to Nairobi
   zoom = 12,
   markers = [],
   onMarkerClick,
-}: MapContainerProps) {
+}: MapContainerProps) => {
   const [error, setError] = useState<string | null>(null);
 
   // For now, just display a message that maps are disabled
