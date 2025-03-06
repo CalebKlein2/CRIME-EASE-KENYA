@@ -8,7 +8,6 @@ import {
   DialogTitle,
   DialogDescription,
 } from "./ui/dialog";
-import { supabase } from "@/lib/supabase";
 
 export default function EmergencySOSButton() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -24,12 +23,6 @@ export default function EmergencySOSButton() {
         },
       );
 
-      // Get nearest emergency contacts
-      const { data: emergencyContacts } = await supabase
-        .from("emergency_contacts")
-        .select("*")
-        .limit(3);
-
       // In a real app, you would:
       // 1. Send SMS/call to emergency contacts
       // 2. Notify nearest police station
@@ -38,7 +31,6 @@ export default function EmergencySOSButton() {
       console.log("Emergency signal sent with location:", {
         lat: position.coords.latitude,
         lng: position.coords.longitude,
-        emergencyContacts,
       });
 
       // Show success message

@@ -1,110 +1,93 @@
 import { useEffect, useState } from 'react';
 import { Card } from '../ui/card';
-import { MapContainer } from './MapContainer';
-import { supabase } from '@/lib/supabase';
-import { useAuth } from '@/contexts/AuthContext';
+import { Button } from '../ui/button';
+
+interface StationStats {
+  totalCases: number;
+  activeCases: number;
+  totalOfficers: number;
+  activeTeams: number;
+}
+
+interface Station {
+  id: string;
+  name: string;
+  location: string;
+  stats: StationStats;
+}
 
 export default function StationOverview() {
-  const [stationData, setStationData] = useState(null);
-  const [stats, setStats] = useState({
-    totalCases: 0,
-    activeCases: 0,
-    totalOfficers: 0,
-    activeTeams: 0
-  });
-  const { user } = useAuth();
+  const [stations, setStations] = useState<Station[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadStationData();
-    loadStats();
+    // Load mock data instead of fetching from Supabase
+    setStations([
+      {
+        id: '1',
+        name: 'Central Police Station',
+        location: 'Nairobi CBD',
+        stats: {
+          totalCases: 150,
+          activeCases: 45,
+          totalOfficers: 75,
+          activeTeams: 12
+        }
+      },
+      {
+        id: '2',
+        name: 'Kilimani Police Station',
+        location: 'Kilimani',
+        stats: {
+          totalCases: 120,
+          activeCases: 35,
+          totalOfficers: 60,
+          activeTeams: 8
+        }
+      }
+    ]);
+    setLoading(false);
   }, []);
 
-  const loadStationData = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('police_stations')
-        .select('*')
-        .eq('id', user?.station_id)
-        .single();
-
-      if (error) throw error;
-      setStationData(data);
-    } catch (error) {
-      console.error('Error loading station data:', error);
-    }
-  };
-
-  const loadStats = async () => {
-    try {
-      // Get total cases
-      const { count: totalCases } = await supabase
-        .from('cases')
-        .select('*', { count: 'exact' })
-        .eq('station_id', user?.station_id);
-
-      // Get active cases
-      const { count: activeCases } = await supabase
-        .from('cases')
-        .select('*', { count: 'exact' })
-        .eq('station_id', user?.station_id)
-        .in('status', ['open', 'in-progress']);
-
-      // Get total officers
-      const { count: totalOfficers } = await supabase
-        .from('police_officers')
-        .select('*', { count: 'exact' })
-        .eq('station_id', user?.station_id);
-
-      // Get active teams
-      const { count: activeTeams } = await supabase
-        .from('investigation_teams')
-        .select('*', { count: 'exact' })
-        .eq('station_id', user?.station_id)
-        .eq('status', 'active');
-
-      setStats({
-        totalCases: totalCases || 0,
-        activeCases: activeCases || 0,
-        totalOfficers: totalOfficers || 0,
-        activeTeams: activeTeams || 0
-      });
-    } catch (error) {
-      console.error('Error loading stats:', error);
-    }
-  };
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <p>Loading stations...</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="p-4">
-          <h3 className="font-semibold mb-2">Total Cases</h3>
-          <p className="text-3xl font-bold">{stats.totalCases}</p>
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {stations.map((station) => (
+        <Card key={station.id} className="p-4">
+          <h3 className="text-lg font-semibold mb-2">{station.name}</h3>
+          <p className="text-gray-600 mb-4">{station.location}</p>
+          
+          <div className="grid grid-cols-2 gap-4 mb-4">
+            <div>
+              <p className="text-sm text-gray-500">Total Cases</p>
+              <p className="text-xl font-bold">{station.stats.totalCases}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">Active Cases</p>
+              <p className="text-xl font-bold">{station.stats.activeCases}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">Officers</p>
+              <p className="text-xl font-bold">{station.stats.totalOfficers}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">Active Teams</p>
+              <p className="text-xl font-bold">{station.stats.activeTeams}</p>
+            </div>
+          </div>
+          
+          <div className="flex justify-end">
+            <Button variant="outline" size="sm">View Details</Button>
+          </div>
         </Card>
-        <Card className="p-4">
-          <h3 className="font-semibold mb-2">Active Cases</h3>
-          <p className="text-3xl font-bold">{stats.activeCases}</p>
-        </Card>
-        <Card className="p-4">
-          <h3 className="font-semibold mb-2">Total Officers</h3>
-          <p className="text-3xl font-bold">{stats.totalOfficers}</p>
-        </Card>
-        <Card className="p-4">
-          <h3 className="font-semibold mb-2">Active Teams</h3>
-          <p className="text-3xl font-bold">{stats.activeTeams}</p>
-        </Card>
-      </div>
-
-      {stationData && (
-        <Card className="p-4">
-          <h3 className="font-semibold mb-4">Station Location</h3>
-          <MapContainer
-            location={stationData.location}
-            markers={[{
-              position: stationData.location,
-              title: stationData.name,
-              description: stationData.address
-            }]}
-          />
-        </Card>
-      )}
+      ))}
     </div>
+  );
+}

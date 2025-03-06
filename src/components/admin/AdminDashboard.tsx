@@ -2,11 +2,14 @@ import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 import CaseManagement from "./CaseManagement";
 import OfficerManagement from "./OfficerManagement";
+import TeamManagement from "./TeamManagement";
 import StationOverview from "./StationOverview";
 import { useAuth } from "@/contexts/AuthContext";
 
+type TabValue = "cases" | "officers" | "teams" | "station";
+
 export default function AdminDashboard() {
-  const [activeTab, setActiveTab] = useState("cases");
+  const [activeTab, setActiveTab] = useState<TabValue>("cases");
   const { user } = useAuth();
 
   return (
@@ -25,7 +28,7 @@ export default function AdminDashboard() {
 
         <Tabs
           value={activeTab}
-          onValueChange={setActiveTab}
+          onValueChange={(value) => setActiveTab(value as TabValue)}
           className="space-y-4"
         >
           <TabsList>
@@ -44,9 +47,7 @@ export default function AdminDashboard() {
           </TabsContent>
 
           <TabsContent value="teams">
-            <div className="flex justify-center">
-              <TeamManagement />
-            </div>
+            <TeamManagement />
           </TabsContent>
 
           <TabsContent value="station">

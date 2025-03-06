@@ -1,52 +1,60 @@
-import { Suspense } from "react";
-import { useRoutes, Routes, Route, Navigate } from "react-router-dom";
-import Home from "./components/home";
+import { Routes, Route, Navigate } from "react-router-dom";
+import { SignedIn, SignedOut, RedirectToSignIn } from "@clerk/clerk-react";
+import { AuthProvider } from "./contexts/AuthContext";
+import AdminDashboard from "./components/admin/AdminDashboard";
+import LandingPage from "./components/LandingPage";
 import LoginPage from "./components/auth/LoginPage";
 import SignUpPage from "./components/auth/SignUpPage";
-import LandingPage from "./components/LandingPage";
+import Home from "./components/home";
 import AnonymousReport from "./components/AnonymousReport";
-import { AuthProvider, useAuth } from "./contexts/AuthContext";
-import routes from "tempo-routes";
-import Navbar from "./components/Navbar";
 
-function PrivateRoute({ children }: { children: React.ReactNode }) {
-  const { user, isLoading } = useAuth();
-
-  if (isLoading) {
-    return <div>Loading...</div>;
-  }
-
-  if (!user) {
-    return <Navigate to="/login" replace />;
-  }
-
-  return children;
-}
-
-function App() {
+export default function App() {
   return (
     <AuthProvider>
-      <Suspense fallback={<div>Loading...</div>}>
-        <div className="min-h-screen bg-gray-50">
-          <Routes>
-            <Route path="/" element={<LandingPage />} />
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/signup" element={<SignUpPage />} />
-            <Route path="/anonymous" element={<AnonymousReport />} />
-            <Route
-              path="/dashboard/*"
-              element={
-                <PrivateRoute>
-                  <Home />
-                </PrivateRoute>
-              }
-            />
-          </Routes>
-          {import.meta.env.VITE_TEMPO === "true" && useRoutes(routes)}
-        </div>
-      </Suspense>
+      <Routes>
+        {/* Public routes */}
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/anonymous" element={<AnonymousReport />} />
+        
+        {/* Auth routes with Clerk */}
+        <Route
+          path="/login"
+          element={
+            <SignedOut>
+              <LoginPage />
+            </SignedOut>
+          }
+        />
+        <Route
+          path="/signup"
+          element={
+            <SignedOut>
+              <SignUpPage />
+            </SignedOut>
+          }
+        />
+
+        {/* Protected routes */}
+        <Route
+          path="/admin/*"
+          element={
+            <SignedIn>
+              <AdminDashboard />
+            </SignedIn>
+          }
+        />
+        <Route
+          path="/dashboard/*"
+          element={
+            <SignedIn>
+              <Home />
+            </SignedIn>
+          }
+        />
+
+        {/* Catch-all redirect */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
     </AuthProvider>
   );
 }
-
-export default App;

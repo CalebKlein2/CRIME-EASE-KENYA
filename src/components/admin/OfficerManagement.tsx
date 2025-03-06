@@ -1,195 +1,156 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { Card } from "../ui/card";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
-import { supabase } from "@/lib/supabase";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "../ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../ui/select";
-import { useAuth } from "@/contexts/AuthContext";
 
-interface Officer {
+interface User {
   id: string;
-  user_id: string;
+  full_name: string;
+  email: string;
   badge_number: string;
   rank: string;
-  status: "active" | "inactive" | "suspended";
-  full_name: string;
+  status: "active" | "inactive";
 }
 
 export default function OfficerManagement() {
-  const [officers, setOfficers] = useState<Officer[]>([]);
+  const [officers, setOfficers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showAddDialog, setShowAddDialog] = useState(false);
-  const { user } = useAuth();
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [badgeNumber, setBadgeNumber] = useState("");
+  const [rank, setRank] = useState("");
 
   useEffect(() => {
-    loadOfficers();
+    // Load mock data
+    setOfficers([
+      {
+        id: "1",
+        full_name: "John Doe",
+        email: "john.doe@police.go.ke",
+        badge_number: "KPS001",
+        rank: "Sergeant",
+        status: "active"
+      },
+      {
+        id: "2",
+        full_name: "Jane Smith",
+        email: "jane.smith@police.go.ke",
+        badge_number: "KPS002",
+        rank: "Inspector",
+        status: "active"
+      }
+    ]);
+    setLoading(false);
   }, []);
 
-  const loadOfficers = async () => {
-    try {
-      const { data, error } = await supabase
-        .from("police_officers")
-        .select(
-          `
-          *,
-          user:user_id(email, full_name)
-        `,
-        )
-        .eq("station_id", user?.station_id);
+  const handleAddOfficer = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Add mock officer
+    const newOfficer: User = {
+      id: (officers.length + 1).toString(),
+      full_name: fullName,
+      email: email,
+      badge_number: badgeNumber,
+      rank: rank,
+      status: "active"
+    };
 
-      if (error) throw error;
-      setOfficers(data);
-    } catch (error) {
-      console.error("Error loading officers:", error);
-    } finally {
-      setLoading(false);
-    }
+    setOfficers([...officers, newOfficer]);
+    
+    // Reset form
+    setFullName("");
+    setEmail("");
+    setBadgeNumber("");
+    setRank("");
   };
 
-  const addOfficer = async (formData: FormData) => {
-    try {
-      const email = formData.get("email") as string;
-      const password = formData.get("password") as string;
-      const fullName = formData.get("fullName") as string;
-      const badgeNumber = formData.get("badgeNumber") as string;
-      const rank = formData.get("rank") as string;
-
-      // Create auth user
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            full_name: fullName,
-            role: "officer",
-          },
-        },
-      });
-
-      if (authError) throw authError;
-
-      // Create officer record
-      const { error: officerError } = await supabase
-        .from("police_officers")
-        .insert([
-          {
-            user_id: authData.user!.id,
-            station_id: user?.station_id,
-            badge_number: badgeNumber,
-            rank,
-            status: "active",
-          },
-        ]);
-
-      if (officerError) throw officerError;
-
-      loadOfficers();
-      setShowAddDialog(false);
-    } catch (error) {
-      console.error("Error adding officer:", error);
-    }
+  const handleDeactivateOfficer = async (officerId: string) => {
+    // Update mock data
+    setOfficers(officers.map(officer => 
+      officer.id === officerId 
+        ? { ...officer, status: "inactive" }
+        : officer
+    ));
   };
 
-  const updateOfficerStatus = async (officerId: string, status: string) => {
-    try {
-      const { error } = await supabase
-        .from("police_officers")
-        .update({ status })
-        .eq("id", officerId);
-
-      if (error) throw error;
-      loadOfficers();
-    } catch (error) {
-      console.error("Error updating officer status:", error);
-    }
-  };
+  if (loading) {
+    return <div>Loading officers...</div>;
+  }
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Officers</h2>
-        <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-          <DialogTrigger asChild>
-            <Button>Add Officer</Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Add New Officer</DialogTitle>
-            </DialogHeader>
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                addOfficer(new FormData(e.currentTarget));
-              }}
-            >
-              <div className="space-y-4">
-                <Input name="fullName" placeholder="Full Name" required />
-                <Input name="email" type="email" placeholder="Email" required />
-                <Input
-                  name="password"
-                  type="password"
-                  placeholder="Password"
-                  required
-                />
-                <Input name="badgeNumber" placeholder="Badge Number" required />
-                <Select name="rank" required>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select Rank" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="constable">Constable</SelectItem>
-                    <SelectItem value="corporal">Corporal</SelectItem>
-                    <SelectItem value="sergeant">Sergeant</SelectItem>
-                    <SelectItem value="inspector">Inspector</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Button type="submit">Add Officer</Button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
-      </div>
+      <Card className="p-4">
+        <h3 className="text-lg font-semibold mb-4">Add New Officer</h3>
+        <form onSubmit={handleAddOfficer} className="space-y-4">
+          <div>
+            <Input
+              placeholder="Full Name"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              required
+            />
+          </div>
+          <div>
+            <Input
+              type="email"
+              placeholder="Email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+          </div>
+          <div>
+            <Input
+              placeholder="Badge Number"
+              value={badgeNumber}
+              onChange={(e) => setBadgeNumber(e.target.value)}
+              required
+            />
+          </div>
+          <div>
+            <Input
+              placeholder="Rank"
+              value={rank}
+              onChange={(e) => setRank(e.target.value)}
+              required
+            />
+          </div>
+          <Button type="submit">Add Officer</Button>
+        </form>
+      </Card>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {officers.map((officer) => (
           <Card key={officer.id} className="p-4">
-            <div className="flex justify-between items-start">
+            <div className="flex justify-between items-start mb-4">
               <div>
-                <h3 className="font-semibold">{officer.user.full_name}</h3>
-                <p className="text-sm text-gray-600">{officer.badge_number}</p>
-                <p className="text-sm text-gray-600 capitalize">
-                  {officer.rank}
-                </p>
+                <h4 className="font-semibold">{officer.full_name}</h4>
+                <p className="text-sm text-gray-500">{officer.email}</p>
               </div>
-              <Select
-                value={officer.status}
-                onValueChange={(value) =>
-                  updateOfficerStatus(officer.id, value)
-                }
-              >
-                <SelectTrigger className="w-[120px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="inactive">Inactive</SelectItem>
-                  <SelectItem value="suspended">Suspended</SelectItem>
-                </SelectContent>
-              </Select>
+              <span className={`px-2 py-1 rounded text-xs ${
+                officer.status === "active" 
+                  ? "bg-green-100 text-green-800" 
+                  : "bg-red-100 text-red-800"
+              }`}>
+                {officer.status}
+              </span>
             </div>
+            <div className="space-y-2 text-sm text-gray-600">
+              <p>Badge: {officer.badge_number}</p>
+              <p>Rank: {officer.rank}</p>
+            </div>
+            {officer.status === "active" && (
+              <div className="mt-4">
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => handleDeactivateOfficer(officer.id)}
+                >
+                  Deactivate
+                </Button>
+              </div>
+            )}
           </Card>
         ))}
       </div>
