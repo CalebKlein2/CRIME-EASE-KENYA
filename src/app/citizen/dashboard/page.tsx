@@ -24,8 +24,29 @@ import {
   Calendar,
   BarChart,
   Loader2,
-  Mail
+  Mail,
+  Search,
+  Share2,
+  ThumbsUp,
+  PhoneCall,
+  MessageSquare,
+  Heart,
+  PenLine
 } from 'lucide-react';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -92,6 +113,8 @@ import CitizenNotificationsOriginal from '../notifications/page';
 import CitizenTrackOriginal from '../track/page';
 import CitizenSupportOriginal from '../support/page';
 import CitizenHelpOriginal from '../help/page';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 
 // Enhanced Reports Content
 const ReportsContent = () => {
@@ -645,7 +668,7 @@ const FindStationContent = () => {
                 <p className="text-sm text-gray-400 mt-1">Using Google Maps or Mapbox integration</p>
                 
                 {/* Pins for demo purposes */}
-                <div className="absolute top-1/4 left-1/4 transform -translate-x-1/2 -translate-y-1/2">
+                <div className="absolute top-1/4 left-1/4 transform -translate-x-1/2 -translate-y-full">
                   <div className="relative">
                     <MapPin className="h-5 w-5 text-red-500" />
                     <div className="absolute top-0 left-0 transform -translate-x-1/2 -translate-y-full bg-white rounded shadow-md p-1 text-xs whitespace-nowrap">
@@ -1345,7 +1368,7 @@ const TrackCaseContent = () => {
                           <span>{caseItem.category}</span>
                         </div>
                       </div>
-                      <span className={`px-2 py-1 rounded text-xs mt-2 md:mt-0 ${getStatusColor(caseItem.status)}`}>
+                      <span className={`px-2 py-1 rounded text-xs ${getStatusColor(caseItem.status)}`}>
                         {caseItem.statusText}
                       </span>
                     </div>
@@ -1617,6 +1640,404 @@ const TrackCaseContent = () => {
   );
 };
 
+// Enhanced Support Content
+const SupportContent = () => {
+  const [activeTab, setActiveTab] = useState("faq");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showContactForm, setShowContactForm] = useState(false);
+  
+  // Mock FAQ data
+  const faqs = [
+    {
+      id: 1,
+      question: "How do I report a crime?",
+      answer: "You can report a crime through our platform by clicking on the 'Report' section in the dashboard, then select 'New Report'. Fill in all the required details and submit. You'll receive a case number for tracking once your report is reviewed.",
+      category: "reporting"
+    },
+    {
+      id: 2,
+      question: "What information should I include in my report?",
+      answer: "Include as much detail as possible: date, time, and location of the incident, description of what happened, information about any suspects, witnesses, or victims, and any evidence you may have such as photos or videos. The more information you provide, the more effectively law enforcement can respond.",
+      category: "reporting"
+    },
+    {
+      id: 3,
+      question: "How long does it take for my report to be reviewed?",
+      answer: "Reports are typically reviewed within 24-48 hours. Priority is given to emergencies and more serious offenses. You'll receive a notification when your report status changes.",
+      category: "processing"
+    },
+    {
+      id: 4,
+      question: "Can I update my report after submission?",
+      answer: "Yes, you can add additional information or evidence to your report. Go to 'Track Cases' in the dashboard, find your case, and click 'Update Case' to add new information.",
+      category: "reporting"
+    },
+    {
+      id: 5,
+      question: "How do I find the nearest police station?",
+      answer: "Use the 'Find Station' feature in your dashboard. It will show you the closest police stations based on your location, along with their contact information and services offered.",
+      category: "services"
+    },
+    {
+      id: 6,
+      question: "Is my information kept confidential?",
+      answer: "Yes, all personal information is kept confidential and is only accessible to authorized law enforcement personnel. Your information is protected by our privacy policy and is used solely for the purpose of investigating the reported incident.",
+      category: "privacy"
+    },
+    {
+      id: 7,
+      question: "Can I report anonymously?",
+      answer: "Yes, you can choose to report anonymously, though providing contact information helps officers follow up if they need additional information. Anonymous reports are still investigated, but may be limited if further details are needed.",
+      category: "privacy"
+    },
+    {
+      id: 8,
+      question: "How do I track the status of my case?",
+      answer: "You can track your case through the 'Track Cases' section in your dashboard. Enter your case number or browse your submitted reports to see the current status, assigned officer, and any updates.",
+      category: "processing"
+    }
+  ];
+
+  // Mock contact methods
+  const contactMethods = [
+    {
+      id: 1,
+      title: "Emergency Hotline",
+      description: "For immediate assistance in emergency situations",
+      contact: "999 or 112",
+      icon: "PhoneCall",
+      priority: "high"
+    },
+    {
+      id: 2,
+      title: "Non-Emergency Police Line",
+      description: "For non-urgent police matters and inquiries",
+      contact: "0800 722 203",
+      icon: "Phone",
+      priority: "medium"
+    },
+    {
+      id: 3,
+      title: "Technical Support",
+      description: "For issues with the Crime Ease Kenya platform",
+      contact: "support@crimeease.go.ke",
+      icon: "HelpCircle",
+      priority: "low"
+    },
+    {
+      id: 4,
+      title: "Victim Support Services",
+      description: "Counseling and support for crime victims",
+      contact: "0800 723 253",
+      icon: "Heart",
+      priority: "medium"
+    }
+  ];
+
+  // Filter FAQs based on search
+  const filteredFaqs = faqs.filter(faq => 
+    faq.question.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    faq.answer.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    faq.category.includes(searchQuery.toLowerCase())
+  );
+
+  const getIconComponent = (iconName) => {
+    switch (iconName) {
+      case "PhoneCall": return <PhoneCall className="h-5 w-5" />;
+      case "Phone": return <Phone className="h-5 w-5" />;
+      case "HelpCircle": return <HelpCircle className="h-5 w-5" />;
+      case "MessageSquare": return <MessageSquare className="h-5 w-5" />;
+      case "Heart": return <Heart className="h-5 w-5" />;
+      default: return <HelpCircle className="h-5 w-5" />;
+    }
+  };
+
+  const getPriorityColor = (priority) => {
+    switch (priority) {
+      case "high": return "bg-red-100 text-red-800 border-red-200";
+      case "medium": return "bg-yellow-100 text-yellow-800 border-yellow-200";
+      case "low": return "bg-blue-100 text-blue-800 border-blue-200";
+      default: return "bg-gray-100 text-gray-800 border-gray-200";
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col md:flex-row justify-between gap-4">
+        <div className="w-full">
+          <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="grid grid-cols-3 w-full">
+              <TabsTrigger value="faq">Frequently Asked Questions</TabsTrigger>
+              <TabsTrigger value="contact">Contact Support</TabsTrigger>
+              <TabsTrigger value="guides">User Guides</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="faq" className="mt-6">
+              <div className="mb-6">
+                <div className="relative">
+                  <Input
+                    placeholder="Search FAQs..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-10"
+                  />
+                  <Search className="h-5 w-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                </div>
+                
+                <div className="flex flex-wrap gap-2 mt-3">
+                  <Badge variant="outline" onClick={() => setSearchQuery("")} className="cursor-pointer hover:bg-gray-100">
+                    All
+                  </Badge>
+                  <Badge variant="outline" onClick={() => setSearchQuery("reporting")} className="cursor-pointer hover:bg-gray-100">
+                    Reporting
+                  </Badge>
+                  <Badge variant="outline" onClick={() => setSearchQuery("processing")} className="cursor-pointer hover:bg-gray-100">
+                    Case Processing
+                  </Badge>
+                  <Badge variant="outline" onClick={() => setSearchQuery("privacy")} className="cursor-pointer hover:bg-gray-100">
+                    Privacy
+                  </Badge>
+                  <Badge variant="outline" onClick={() => setSearchQuery("services")} className="cursor-pointer hover:bg-gray-100">
+                    Services
+                  </Badge>
+                </div>
+              </div>
+              
+              <div className="space-y-4">
+                {filteredFaqs.length > 0 ? (
+                  <Accordion type="single" collapsible className="w-full">
+                    {filteredFaqs.map((faq) => (
+                      <AccordionItem key={faq.id} value={`faq-${faq.id}`}>
+                        <AccordionTrigger className="text-left">
+                          {faq.question}
+                        </AccordionTrigger>
+                        <AccordionContent>
+                          <div className="pt-2 pb-4 text-gray-700">
+                            {faq.answer}
+                          </div>
+                          <div className="flex justify-between items-center text-sm">
+                            <Badge variant="outline" className="bg-gray-50">
+                              {faq.category}
+                            </Badge>
+                            <div className="flex items-center space-x-2">
+                              <Button size="sm" variant="ghost" className="h-8 px-2">
+                                <ThumbsUp className="h-4 w-4 mr-1" />
+                                Helpful
+                              </Button>
+                              <Button size="sm" variant="ghost" className="h-8 px-2">
+                                <Share2 className="h-4 w-4 mr-1" />
+                                Share
+                              </Button>
+                            </div>
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
+                    ))}
+                  </Accordion>
+                ) : (
+                  <div className="text-center py-8 border rounded-lg">
+                    <Search className="h-10 w-10 mx-auto text-gray-400 mb-2" />
+                    <h3 className="font-medium text-gray-500">No FAQs found</h3>
+                    <p className="text-gray-400 text-sm mt-1">Try adjusting your search criteria</p>
+                    <Button variant="outline" size="sm" className="mt-4" onClick={() => setSearchQuery("")}>
+                      Clear Search
+                    </Button>
+                  </div>
+                )}
+              </div>
+              
+              <div className="mt-8 p-4 bg-blue-50 rounded-lg border border-blue-100">
+                <div className="flex items-start">
+                  <HelpCircle className="h-5 w-5 text-blue-700 mt-0.5 mr-3 flex-shrink-0" />
+                  <div>
+                    <h4 className="font-medium text-blue-800">Can't find what you're looking for?</h4>
+                    <p className="text-sm text-blue-700 mt-1">
+                      Our support team is ready to help with any questions you may have.
+                    </p>
+                    <Button 
+                      size="sm" 
+                      className="mt-3 bg-blue-700 hover:bg-blue-800"
+                      onClick={() => {
+                        setActiveTab("contact");
+                        setShowContactForm(true);
+                      }}
+                    >
+                      <MessageSquare className="h-4 w-4 mr-1" />
+                      Contact Support
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="contact" className="mt-6 space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {contactMethods.map(method => (
+                  <Card key={method.id} className={`border-l-4 ${getPriorityColor(method.priority)}`}>
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center">
+                        <div className={`mr-3 p-2 rounded-full ${
+                          method.priority === 'high' ? 'bg-red-100' :
+                          method.priority === 'medium' ? 'bg-yellow-100' :
+                          'bg-blue-100'
+                        }`}>
+                          {getIconComponent(method.icon)}
+                        </div>
+                        <div>
+                          <CardTitle className="text-lg">{method.title}</CardTitle>
+                          <CardDescription>{method.description}</CardDescription>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="font-medium text-lg">{method.contact}</div>
+                    </CardContent>
+                    <CardFooter className="pt-0">
+                      {method.icon === "PhoneCall" || method.icon === "Phone" ? (
+                        <Button className="w-full">
+                          <Phone className="h-4 w-4 mr-1" />
+                          Call Now
+                        </Button>
+                      ) : (
+                        <Button className="w-full">
+                          <Mail className="h-4 w-4 mr-1" />
+                          Send Email
+                        </Button>
+                      )}
+                    </CardFooter>
+                  </Card>
+                ))}
+              </div>
+              
+              {showContactForm && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Contact Form</CardTitle>
+                    <CardDescription>Fill out this form and we'll get back to you as soon as possible</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <form className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="name">Full Name</Label>
+                          <Input id="name" placeholder="John Doe" />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="email">Email Address</Label>
+                          <Input id="email" type="email" placeholder="john@example.com" />
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="subject">Subject</Label>
+                        <Input id="subject" placeholder="Help with my report" />
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="message">Message</Label>
+                        <Textarea id="message" placeholder="Please describe your issue in detail..." rows={5} />
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="category">Category</Label>
+                        <Select>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a category" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="technical">Technical Issue</SelectItem>
+                            <SelectItem value="account">Account Problem</SelectItem>
+                            <SelectItem value="report">Reporting Help</SelectItem>
+                            <SelectItem value="feedback">Feedback</SelectItem>
+                            <SelectItem value="other">Other</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      
+                      <div className="flex items-center space-x-2">
+                        <Checkbox id="terms" />
+                        <Label htmlFor="terms" className="text-sm">I understand that my information will be processed in accordance with the privacy policy</Label>
+                      </div>
+                    </form>
+                  </CardContent>
+                  <CardFooter className="flex justify-between">
+                    <Button variant="outline" onClick={() => setShowContactForm(false)}>Cancel</Button>
+                    <Button>Submit Request</Button>
+                  </CardFooter>
+                </Card>
+              )}
+              
+              {!showContactForm && (
+                <div className="flex justify-center">
+                  <Button onClick={() => setShowContactForm(true)}>
+                    <PenLine className="h-4 w-4 mr-1" />
+                    Open Contact Form
+                  </Button>
+                </div>
+              )}
+            </TabsContent>
+            
+            <TabsContent value="guides" className="mt-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-lg">Reporting Guide</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="aspect-video bg-gray-100 rounded-md flex items-center justify-center mb-3">
+                      <FileText className="h-10 w-10 text-gray-400" />
+                    </div>
+                    <p className="text-sm text-gray-700">
+                      Learn how to effectively report incidents and what information to include for faster processing.
+                    </p>
+                  </CardContent>
+                  <CardFooter>
+                    <Button variant="outline" className="w-full">View Guide</Button>
+                  </CardFooter>
+                </Card>
+                
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-lg">Case Tracking Tutorial</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="aspect-video bg-gray-100 rounded-md flex items-center justify-center mb-3">
+                      <FileText className="h-10 w-10 text-gray-400" />
+                    </div>
+                    <p className="text-sm text-gray-700">
+                      A step-by-step tutorial on how to track your case, interpret status updates, and communicate with officers.
+                    </p>
+                  </CardContent>
+                  <CardFooter>
+                    <Button variant="outline" className="w-full">View Guide</Button>
+                  </CardFooter>
+                </Card>
+                
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-lg">Platform Overview</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="aspect-video bg-gray-100 rounded-md flex items-center justify-center mb-3">
+                      <FileText className="h-10 w-10 text-gray-400" />
+                    </div>
+                    <p className="text-sm text-gray-700">
+                      Get familiar with all features of the Crime Ease Kenya platform and how to navigate the citizen dashboard.
+                    </p>
+                  </CardContent>
+                  <CardFooter>
+                    <Button variant="outline" className="w-full">View Guide</Button>
+                  </CardFooter>
+                </Card>
+              </div>
+            </TabsContent>
+          </Tabs>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // Main dashboard content component
 const DashboardHome = () => {
   return (
@@ -1815,26 +2236,7 @@ export default function CitizenDashboard() {
         <Route path="support/*" element={
           <div className="p-6">
             <h2 className="text-2xl font-bold mb-6">Contact Support</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Technical Support</CardTitle>
-                  <CardDescription>For issues with the app or website</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    <div className="flex items-center">
-                      <Phone className="h-4 w-4 mr-2 text-gray-500" />
-                      <span className="text-sm">+254 712 345 678</span>
-                    </div>
-                    <div className="flex items-center">
-                      <MessageCircle className="h-4 w-4 mr-2 text-gray-500" />
-                      <span className="text-sm">tech.support@crime-ease.ke</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+            <SupportContent />
           </div>
         } />
         <Route path="help/*" element={
