@@ -496,6 +496,1127 @@ const ReportsContent = () => {
   );
 };
 
+// Enhanced Find Station Content
+const FindStationContent = () => {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [currentLocation, setCurrentLocation] = useState(null);
+  const [loadingLocation, setLoadingLocation] = useState(false);
+  const [mapView, setMapView] = useState(true);
+  
+  // Mock stations data
+  const stations = [
+    {
+      id: 1,
+      name: "Central Police Station",
+      distance: "2.3",
+      address: "Kimathi Street, CBD, Nairobi",
+      phone: "+254-020-2227411",
+      email: "central@police.go.ke",
+      hours: "24/7",
+      services: ["Crime Reporting", "Traffic Services", "Criminal Investigations"],
+      coordinates: { lat: -1.2833, lng: 36.8167 },
+      officers: 45,
+      rating: 4.1
+    },
+    {
+      id: 2,
+      name: "Westlands Police Post",
+      distance: "4.7",
+      address: "Mpaka Road, Westlands, Nairobi",
+      phone: "+254-020-4441652",
+      email: "westlands@police.go.ke",
+      hours: "24/7",
+      services: ["Crime Reporting", "Community Policing"],
+      coordinates: { lat: -1.2641, lng: 36.8065 },
+      officers: 18,
+      rating: 3.8
+    },
+    {
+      id: 3,
+      name: "Kilimani Police Station",
+      distance: "5.2",
+      address: "Argwings Kodhek Road, Kilimani, Nairobi",
+      phone: "+254-020-2721712",
+      email: "kilimani@police.go.ke",
+      hours: "24/7",
+      services: ["Crime Reporting", "Traffic Services", "Gender Desk"],
+      coordinates: { lat: -1.2897, lng: 36.7816 },
+      officers: 38,
+      rating: 4.3
+    },
+    {
+      id: 4,
+      name: "Industrial Area Police Station",
+      distance: "6.5",
+      address: "Enterprise Road, Industrial Area, Nairobi",
+      phone: "+254-020-5501234",
+      email: "industrial@police.go.ke",
+      hours: "24/7",
+      services: ["Crime Reporting", "Commercial Crime Unit"],
+      coordinates: { lat: -1.3106, lng: 36.8354 },
+      officers: 32,
+      rating: 3.5
+    }
+  ];
+
+  // Filter stations based on search
+  const filteredStations = stations.filter(station => 
+    station.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    station.address.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  // Get current location
+  const getCurrentLocation = () => {
+    setLoadingLocation(true);
+    // Simulating getting location
+    setTimeout(() => {
+      setCurrentLocation({ lat: -1.2921, lng: 36.8219 });
+      setLoadingLocation(false);
+    }, 1500);
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div className="relative flex-1 w-full md:max-w-md">
+          <Input
+            placeholder="Search police stations..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10"
+          />
+          <MapPin className="h-5 w-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+        </div>
+        
+        <div className="flex items-center space-x-2 w-full md:w-auto">
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={getCurrentLocation}
+            disabled={loadingLocation}
+          >
+            {loadingLocation ? (
+              <>
+                <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+                Locating...
+              </>
+            ) : (
+              <>
+                <MapPin className="mr-1 h-4 w-4" />
+                Use My Location
+              </>
+            )}
+          </Button>
+          
+          <div className="border rounded-md flex">
+            <Button 
+              variant={mapView ? "default" : "ghost"} 
+              size="sm" 
+              className="rounded-r-none"
+              onClick={() => setMapView(true)}
+            >
+              <MapPin className="h-4 w-4" />
+              <span className="ml-1 hidden md:inline">Map</span>
+            </Button>
+            <Button 
+              variant={!mapView ? "default" : "ghost"} 
+              size="sm" 
+              className="rounded-l-none"
+              onClick={() => setMapView(false)}
+            >
+              <FileText className="h-4 w-4" />
+              <span className="ml-1 hidden md:inline">List</span>
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {mapView ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Police Stations Near You</CardTitle>
+            <CardDescription>Interactive map showing nearby stations</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="relative w-full h-80 bg-gray-100 rounded-md flex items-center justify-center border">
+              <div className="text-center p-4">
+                <MapPin className="h-10 w-10 mx-auto mb-2 text-blue-500" />
+                <p className="text-gray-500">Map view would display here</p>
+                <p className="text-sm text-gray-400 mt-1">Using Google Maps or Mapbox integration</p>
+                
+                {/* Pins for demo purposes */}
+                <div className="absolute top-1/4 left-1/4 transform -translate-x-1/2 -translate-y-1/2">
+                  <div className="relative">
+                    <MapPin className="h-5 w-5 text-red-500" />
+                    <div className="absolute top-0 left-0 transform -translate-x-1/2 -translate-y-full bg-white rounded shadow-md p-1 text-xs whitespace-nowrap">
+                      Central Police Station
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="absolute top-1/3 right-1/3 transform -translate-x-1/2 -translate-y-1/2">
+                  <MapPin className="h-5 w-5 text-red-500" />
+                </div>
+                
+                <div className="absolute bottom-1/4 right-1/4 transform -translate-x-1/2 -translate-y-1/2">
+                  <MapPin className="h-5 w-5 text-red-500" />
+                </div>
+                
+                {currentLocation && (
+                  <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+                    <div className="h-4 w-4 bg-blue-500 rounded-full animate-ping absolute" />
+                    <div className="h-4 w-4 bg-blue-500 rounded-full relative" />
+                  </div>
+                )}
+              </div>
+            </div>
+          </CardContent>
+          <CardFooter className="text-sm text-gray-500">
+            Click on a station pin to view more details
+          </CardFooter>
+        </Card>
+      ) : (
+        <Card>
+          <CardHeader>
+            <CardTitle>Nearby Police Stations</CardTitle>
+            <CardDescription>
+              {filteredStations.length} station{filteredStations.length !== 1 ? 's' : ''} found
+              {currentLocation ? ' near your location' : ''}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {filteredStations.map(station => (
+                <div key={station.id} className="border rounded-lg p-4 hover:border-blue-200 transition-colors">
+                  <div className="flex flex-col md:flex-row justify-between">
+                    <div>
+                      <div className="flex items-center">
+                        <h3 className="font-medium">{station.name}</h3>
+                        <Badge className="ml-2" variant="outline">{station.distance} km</Badge>
+                      </div>
+                      <p className="text-sm text-gray-500 mt-1">{station.address}</p>
+                    </div>
+                    <div className="flex items-center mt-2 md:mt-0">
+                      <div className="flex items-center space-x-1 text-sm">
+                        {Array.from({ length: 5 }).map((_, i) => (
+                          <span key={i} className={`h-4 w-4 ${i < Math.floor(station.rating) ? 'text-yellow-400' : 'text-gray-300'}`}>★</span>
+                        ))}
+                        <span className="text-sm ml-1">{station.rating}</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="mt-3 grid grid-cols-1 md:grid-cols-3 gap-2 text-xs text-gray-500">
+                    <div>
+                      <span className="font-medium">Location:</span> {station.address}
+                    </div>
+                    <div>
+                      <span className="font-medium">Phone:</span> {station.phone}
+                    </div>
+                    <div>
+                      <span className="font-medium">Hours:</span> {station.hours}
+                    </div>
+                  </div>
+                  
+                  <div className="mt-3">
+                    <h4 className="text-xs font-medium mb-1">Services:</h4>
+                    <div className="flex flex-wrap gap-1">
+                      {station.services.map((service, idx) => (
+                        <Badge key={idx} variant="secondary" className="text-xs">{service}</Badge>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  <div className="mt-3 pt-3 border-t flex justify-between items-center">
+                    <div className="text-xs text-gray-500">
+                      <Shield className="h-3 w-3 inline mr-1" /> 
+                      {station.officers} officers on duty
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Button size="sm" variant="outline">
+                        <Phone className="h-3 w-3 mr-1" /> Call
+                      </Button>
+                      <Button size="sm">
+                        <MapPin className="h-3 w-3 mr-1" /> Directions
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              
+              {filteredStations.length === 0 && (
+                <div className="text-center py-8">
+                  <MapPin className="h-10 w-10 mx-auto text-gray-400 mb-2" />
+                  <h3 className="font-medium text-gray-500">No stations found</h3>
+                  <p className="text-gray-400 text-sm mt-1">Try changing your search criteria</p>
+                </div>
+              )}
+            </div>
+          </CardContent>
+          <CardFooter className="flex justify-center">
+            <Button variant="outline">Load More Stations</Button>
+          </CardFooter>
+        </Card>
+      )}
+    </div>
+  );
+};
+
+// Enhanced Notifications Content
+const NotificationsContent = () => {
+  const [filter, setFilter] = useState("all");
+  const [selectedNotification, setSelectedNotification] = useState(null);
+  
+  // Mock notifications data
+  const notifications = [
+    {
+      id: 1,
+      title: "Case Update: Theft Report #12345",
+      message: "Your case has been assigned to Officer Johnson. They will be in touch with you shortly for more information.",
+      time: "Today, 10:30 AM",
+      type: "case_update",
+      read: false,
+      caseId: "12345",
+      actionRequired: false
+    },
+    {
+      id: 2,
+      title: "Evidence Received: Theft Report #12345",
+      message: "We've received the photo evidence you submitted for your theft report. Thank you for providing this information.",
+      time: "Yesterday, 3:45 PM",
+      type: "evidence",
+      read: true,
+      caseId: "12345",
+      actionRequired: false
+    },
+    {
+      id: 3,
+      title: "Interview Request: Vandalism Report #12346",
+      message: "Officer Williams would like to schedule an interview regarding your vandalism report. Please respond at your earliest convenience.",
+      time: "March 20, 2025",
+      type: "interview",
+      read: false,
+      caseId: "12346",
+      actionRequired: true
+    },
+    {
+      id: 4,
+      title: "Case Status Changed: Theft Report #12345",
+      message: "Your case status has been updated from 'Pending Review' to 'Under Investigation'. Officer Johnson has begun investigating your case.",
+      time: "March 18, 2025",
+      type: "status_change",
+      read: true,
+      caseId: "12345",
+      actionRequired: false
+    },
+    {
+      id: 5,
+      title: "Crime Alert for Your Area",
+      message: "There have been reports of vehicle break-ins in your neighborhood. Please ensure all vehicles are locked and valuables are not left visible.",
+      time: "March 15, 2025",
+      type: "alert",
+      read: true,
+      caseId: null,
+      actionRequired: false
+    }
+  ];
+
+  // Filter notifications
+  const getFilteredNotifications = () => {
+    if (filter === "all") return notifications;
+    if (filter === "unread") return notifications.filter(n => !n.read);
+    if (filter === "action") return notifications.filter(n => n.actionRequired);
+    if (filter === "case_updates") return notifications.filter(n => n.type === "case_update" || n.type === "status_change");
+    return notifications;
+  };
+
+  const filteredNotifications = getFilteredNotifications();
+  
+  // Get icon based on notification type
+  const getNotificationIcon = (type) => {
+    switch (type) {
+      case "case_update":
+        return <FileText className="h-5 w-5 text-blue-500" />;
+      case "evidence":
+        return <FileSearch className="h-5 w-5 text-green-500" />;
+      case "interview":
+        return <MessageCircle className="h-5 w-5 text-purple-500" />;
+      case "status_change":
+        return <BarChart className="h-5 w-5 text-orange-500" />;
+      case "alert":
+        return <AlertCircle className="h-5 w-5 text-red-500" />;
+      default:
+        return <Bell className="h-5 w-5 text-gray-500" />;
+    }
+  };
+
+  const openNotificationDetails = (notification) => {
+    setSelectedNotification(notification);
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <h3 className="text-sm font-medium mb-1">Filter Notifications</h3>
+          <div className="flex flex-wrap gap-2">
+            <Button 
+              size="sm" 
+              variant={filter === "all" ? "default" : "outline"}
+              onClick={() => setFilter("all")}
+            >
+              All ({notifications.length})
+            </Button>
+            <Button 
+              size="sm" 
+              variant={filter === "unread" ? "default" : "outline"}
+              onClick={() => setFilter("unread")}
+            >
+              Unread ({notifications.filter(n => !n.read).length})
+            </Button>
+            <Button 
+              size="sm" 
+              variant={filter === "action" ? "default" : "outline"}
+              onClick={() => setFilter("action")}
+            >
+              Action Required ({notifications.filter(n => n.actionRequired).length})
+            </Button>
+            <Button 
+              size="sm" 
+              variant={filter === "case_updates" ? "default" : "outline"}
+              onClick={() => setFilter("case_updates")}
+            >
+              Case Updates ({notifications.filter(n => n.type === "case_update" || n.type === "status_change").length})
+            </Button>
+          </div>
+        </div>
+        
+        <Button size="sm" variant="outline">
+          <CheckCircle className="mr-1 h-4 w-4" />
+          Mark All as Read
+        </Button>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="md:col-span-2">
+          <Card>
+            <CardHeader>
+              <CardTitle>Your Notifications</CardTitle>
+              <CardDescription>Stay updated on your cases and alerts</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {filteredNotifications.length > 0 ? (
+                <div className="space-y-3">
+                  {filteredNotifications.map((notification) => (
+                    <div 
+                      key={notification.id} 
+                      className={`border rounded-lg p-4 hover:border-blue-200 transition-colors cursor-pointer relative ${!notification.read ? 'bg-blue-50' : ''}`}
+                      onClick={() => openNotificationDetails(notification)}
+                    >
+                      {!notification.read && (
+                        <div className="absolute top-4 right-4 h-2 w-2 bg-blue-500 rounded-full"></div>
+                      )}
+                      
+                      <div className="flex gap-3">
+                        <div className="flex-shrink-0 mt-1">
+                          {getNotificationIcon(notification.type)}
+                        </div>
+                        <div className="flex-grow">
+                          <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+                            <h3 className="font-medium">{notification.title}</h3>
+                            <span className="text-xs text-gray-500 md:ml-2">{notification.time}</span>
+                          </div>
+                          <p className="text-sm text-gray-600 mt-1 line-clamp-2">{notification.message}</p>
+                          
+                          <div className="mt-2 flex items-center justify-between">
+                            <div className="flex items-center space-x-2">
+                              {notification.caseId && (
+                                <Badge variant="outline" className="text-xs">
+                                  Case #{notification.caseId}
+                                </Badge>
+                              )}
+                              {notification.type === "alert" && (
+                                <Badge variant="destructive" className="text-xs">
+                                  Alert
+                                </Badge>
+                              )}
+                              {notification.actionRequired && (
+                                <Badge variant="default" className="text-xs bg-amber-500">
+                                  Action Required
+                                </Badge>
+                              )}
+                            </div>
+                            <ChevronRight className="h-4 w-4 text-gray-400" />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <Bell className="h-10 w-10 mx-auto text-gray-400 mb-2" />
+                  <h3 className="font-medium text-gray-500">No notifications</h3>
+                  <p className="text-gray-400 text-sm mt-1">You're all caught up!</p>
+                </div>
+              )}
+            </CardContent>
+            <CardFooter>
+              <div className="text-sm text-gray-500">
+                Showing {filteredNotifications.length} of {notifications.length} notifications
+              </div>
+            </CardFooter>
+          </Card>
+        </div>
+
+        <div>
+          <Card className="h-full">
+            <CardHeader>
+              <CardTitle>Notification Settings</CardTitle>
+              <CardDescription>Manage how you receive notifications</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <h3 className="text-sm font-medium">Notification Preferences</h3>
+                <div className="flex items-center justify-between text-sm">
+                  <span>Email Notifications</span>
+                  <Button size="sm" variant="outline">Enabled</Button>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span>SMS Notifications</span>
+                  <Button size="sm" variant="outline">Disabled</Button>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span>Push Notifications</span>
+                  <Button size="sm" variant="outline">Enabled</Button>
+                </div>
+              </div>
+              
+              <div className="pt-3 border-t space-y-2">
+                <h3 className="text-sm font-medium">Notification Types</h3>
+                <div className="space-y-1.5">
+                  <div className="flex items-center">
+                    <input type="checkbox" id="case_updates" className="mr-2" defaultChecked />
+                    <label htmlFor="case_updates" className="text-sm">Case Updates</label>
+                  </div>
+                  <div className="flex items-center">
+                    <input type="checkbox" id="evidence" className="mr-2" defaultChecked />
+                    <label htmlFor="evidence" className="text-sm">Evidence Notifications</label>
+                  </div>
+                  <div className="flex items-center">
+                    <input type="checkbox" id="interviews" className="mr-2" defaultChecked />
+                    <label htmlFor="interviews" className="text-sm">Interview Requests</label>
+                  </div>
+                  <div className="flex items-center">
+                    <input type="checkbox" id="status" className="mr-2" defaultChecked />
+                    <label htmlFor="status" className="text-sm">Status Changes</label>
+                  </div>
+                  <div className="flex items-center">
+                    <input type="checkbox" id="alerts" className="mr-2" defaultChecked />
+                    <label htmlFor="alerts" className="text-sm">Crime Alerts</label>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+            <CardFooter>
+              <Button className="w-full">
+                <Bell className="mr-2 h-4 w-4" />
+                Save Preferences
+              </Button>
+            </CardFooter>
+          </Card>
+        </div>
+      </div>
+
+      {/* Notification Detail Modal */}
+      {selectedNotification && (
+        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-md max-h-[80vh] overflow-y-auto">
+            <CardHeader>
+              <div className="flex items-start justify-between">
+                <div>
+                  <CardTitle>{selectedNotification.title}</CardTitle>
+                  <CardDescription>{selectedNotification.time}</CardDescription>
+                </div>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-8 w-8 p-0" 
+                  onClick={() => setSelectedNotification(null)}
+                >
+                  <span className="sr-only">Close</span>
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-2 mb-4">
+                {getNotificationIcon(selectedNotification.type)}
+                <Badge variant="outline">
+                  {selectedNotification.type === "case_update" ? "Case Update" :
+                   selectedNotification.type === "evidence" ? "Evidence" :
+                   selectedNotification.type === "interview" ? "Interview Request" :
+                   selectedNotification.type === "status_change" ? "Status Change" :
+                   selectedNotification.type === "alert" ? "Crime Alert" : "Notification"}
+                </Badge>
+                {selectedNotification.caseId && (
+                  <Badge variant="secondary">Case #{selectedNotification.caseId}</Badge>
+                )}
+              </div>
+              
+              <p className="text-gray-700 mb-6">{selectedNotification.message}</p>
+              
+              {selectedNotification.actionRequired && (
+                <div className="bg-amber-50 border border-amber-200 rounded-md p-3 mb-4">
+                  <h4 className="text-amber-800 font-medium flex items-center">
+                    <AlertCircle className="h-4 w-4 mr-2" />
+                    Action Required
+                  </h4>
+                  <p className="text-amber-700 text-sm mt-1">
+                    This notification requires your attention. Please respond as soon as possible.
+                  </p>
+                </div>
+              )}
+              
+              {selectedNotification.caseId && (
+                <div className="mt-4">
+                  <h4 className="text-sm font-medium mb-2">Case Actions</h4>
+                  <div className="flex flex-wrap gap-2">
+                    <Button size="sm">
+                      <FileSearch className="mr-1 h-4 w-4" />
+                      View Case Details
+                    </Button>
+                    <Button size="sm" variant="outline">
+                      <MessageCircle className="mr-1 h-4 w-4" />
+                      Contact Officer
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+            <CardFooter className="flex justify-between border-t pt-4">
+              <Button variant="ghost" size="sm" onClick={() => setSelectedNotification(null)}>
+                Close
+              </Button>
+              <Button variant="outline" size="sm">
+                <CheckCircle className="mr-1 h-4 w-4" />
+                Mark as Read
+              </Button>
+            </CardFooter>
+          </Card>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Enhanced Track Case Content
+const TrackCaseContent = () => {
+  const [selectedCase, setSelectedCase] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  
+  // Mock cases data
+  const cases = [
+    {
+      id: "12345",
+      title: "Theft Report",
+      date: "March 15, 2025",
+      status: "investigating",
+      statusText: "Under Investigation",
+      description: "Theft of laptop from vehicle at Main Street parking lot between 2-4 PM.",
+      officer: "Officer Johnson",
+      officerContact: "johnson@police.go.ke",
+      officerId: "OP-4523",
+      location: "Main Street, Nairobi",
+      category: "Theft",
+      lastUpdated: "March 20, 2025",
+      caseNumber: "CRB-23456",
+      progress: 60,
+      timeline: [
+        { date: "March 15, 2025", time: "2:30 PM", event: "Case submitted", icon: "FileText", status: "complete" },
+        { date: "March 16, 2025", time: "10:15 AM", event: "Case reviewed and accepted", icon: "CheckCircle", status: "complete" },
+        { date: "March 17, 2025", time: "3:45 PM", event: "Assigned to Officer Johnson", icon: "User", status: "complete" },
+        { date: "March 20, 2025", time: "11:30 AM", event: "Investigation started", icon: "Search", status: "current" },
+        { date: "Pending", time: "", event: "Evidence collection", icon: "FileSearch", status: "upcoming" },
+        { date: "Pending", time: "", event: "Case resolution", icon: "CheckSquare", status: "upcoming" }
+      ],
+      evidence: [
+        { id: 1, type: "image", name: "Damage photo 1", date: "March 15, 2025", submitted: true },
+        { id: 2, type: "image", name: "Damage photo 2", date: "March 15, 2025", submitted: true },
+        { id: 3, type: "document", name: "Insurance report", date: "March 18, 2025", submitted: true }
+      ]
+    },
+    {
+      id: "12346",
+      title: "Vandalism Report",
+      date: "March 10, 2025",
+      status: "resolved",
+      statusText: "Resolved",
+      description: "Graffiti on the community center wall on Park Avenue.",
+      officer: "Officer Williams",
+      officerContact: "williams@police.go.ke",
+      officerId: "OP-2187",
+      location: "Park Avenue, Nairobi",
+      category: "Vandalism",
+      lastUpdated: "March 18, 2025",
+      caseNumber: "CRB-23457",
+      progress: 100,
+      timeline: [
+        { date: "March 10, 2025", time: "4:15 PM", event: "Case submitted", icon: "FileText", status: "complete" },
+        { date: "March 11, 2025", time: "9:30 AM", event: "Case reviewed and accepted", icon: "CheckCircle", status: "complete" },
+        { date: "March 12, 2025", time: "1:45 PM", event: "Assigned to Officer Williams", icon: "User", status: "complete" },
+        { date: "March 14, 2025", time: "10:30 AM", event: "Investigation started", icon: "Search", status: "complete" },
+        { date: "March 16, 2025", time: "2:15 PM", event: "Evidence collection completed", icon: "FileSearch", status: "complete" },
+        { date: "March 18, 2025", time: "11:45 AM", event: "Case resolved", icon: "CheckSquare", status: "complete" }
+      ],
+      evidence: [
+        { id: 1, type: "image", name: "Graffiti photo 1", date: "March 10, 2025", submitted: true },
+        { id: 2, type: "video", name: "Security camera footage", date: "March 12, 2025", submitted: true }
+      ],
+      resolution: {
+        outcome: "Suspect identified and charged",
+        date: "March 18, 2025",
+        details: "The suspect was identified through security camera footage and has been charged with vandalism. The community center wall has been cleaned and restored.",
+        actionTaken: "Legal proceedings initiated"
+      }
+    },
+    {
+      id: "12347",
+      title: "Noise Complaint",
+      date: "March 8, 2025",
+      status: "pending",
+      statusText: "Pending Review",
+      description: "Continuous loud music from apartment 4B after 11 PM for the last week.",
+      officer: "Unassigned",
+      officerContact: "",
+      officerId: "",
+      location: "River Road Apartments, Nairobi",
+      category: "Disturbance",
+      lastUpdated: "March 8, 2025",
+      caseNumber: "CRB-23458",
+      progress: 20,
+      timeline: [
+        { date: "March 8, 2025", time: "11:45 PM", event: "Case submitted", icon: "FileText", status: "complete" },
+        { date: "Pending", time: "", event: "Case review", icon: "CheckCircle", status: "upcoming" },
+        { date: "Pending", time: "", event: "Officer assignment", icon: "User", status: "upcoming" },
+        { date: "Pending", time: "", event: "Investigation", icon: "Search", status: "upcoming" },
+        { date: "Pending", time: "", event: "Case resolution", icon: "CheckSquare", status: "upcoming" }
+      ],
+      evidence: [
+        { id: 1, type: "audio", name: "Noise recording", date: "March 8, 2025", submitted: true }
+      ]
+    }
+  ];
+
+  // Filter cases based on search
+  const filteredCases = cases.filter(caseItem => 
+    caseItem.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    caseItem.caseNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    caseItem.description.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  // Get status color based on case status
+  const getStatusColor = (status) => {
+    switch (status) {
+      case "pending": return "bg-yellow-100 text-yellow-800";
+      case "investigating": return "bg-blue-100 text-blue-800";
+      case "resolved": return "bg-green-100 text-green-800";
+      default: return "bg-gray-100 text-gray-800";
+    }
+  };
+
+  // Get progress color based on case progress
+  const getProgressColor = (progress) => {
+    if (progress < 25) return "bg-red-500";
+    if (progress < 50) return "bg-yellow-500";
+    if (progress < 75) return "bg-blue-500";
+    return "bg-green-500";
+  };
+
+  // Get icon component based on icon name
+  const getTimelineIcon = (iconName) => {
+    switch (iconName) {
+      case "FileText": return <FileText className="h-4 w-4" />;
+      case "CheckCircle": return <CheckCircle className="h-4 w-4" />;
+      case "User": return <User className="h-4 w-4" />;
+      case "Search": return <FileSearch className="h-4 w-4" />;
+      case "FileSearch": return <FileSearch className="h-4 w-4" />;
+      case "CheckSquare": return <CheckCircle className="h-4 w-4" />;
+      default: return <FileText className="h-4 w-4" />;
+    }
+  };
+
+  // Get evidence icon based on type
+  const getEvidenceIcon = (type) => {
+    switch (type) {
+      case "image": return <FileText className="h-4 w-4" />;
+      case "video": return <FileText className="h-4 w-4" />;
+      case "audio": return <FileText className="h-4 w-4" />;
+      case "document": return <FileText className="h-4 w-4" />;
+      default: return <FileText className="h-4 w-4" />;
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div className="relative w-full md:w-80">
+          <Input
+            placeholder="Search case number or keyword..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10"
+          />
+          <FileSearch className="h-5 w-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+        </div>
+        
+        <Button size="sm" asChild>
+          <Link to="/report">
+            <FileText className="mr-1 h-4 w-4" />
+            Submit New Report
+          </Link>
+        </Button>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card className="col-span-1">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg">Case Statistics</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-500">Total Cases</span>
+              <Badge variant="secondary">{cases.length}</Badge>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-500">Pending Review</span>
+              <Badge variant="outline" className="bg-yellow-50 text-yellow-800">
+                {cases.filter(c => c.status === "pending").length}
+              </Badge>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-500">Under Investigation</span>
+              <Badge variant="outline" className="bg-blue-50 text-blue-800">
+                {cases.filter(c => c.status === "investigating").length}
+              </Badge>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-500">Resolved</span>
+              <Badge variant="outline" className="bg-green-50 text-green-800">
+                {cases.filter(c => c.status === "resolved").length}
+              </Badge>
+            </div>
+          </CardContent>
+          <CardFooter className="pt-2 border-t">
+            <Button variant="ghost" size="sm" className="w-full">
+              <BarChart className="h-4 w-4 mr-1" />
+              View Reports
+            </Button>
+          </CardFooter>
+        </Card>
+
+        <Card className="col-span-1 md:col-span-3">
+          <CardHeader>
+            <CardTitle>Your Cases</CardTitle>
+            <CardDescription>Track the status of your reported cases</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {filteredCases.length > 0 ? (
+                filteredCases.map(caseItem => (
+                  <div 
+                    key={caseItem.id} 
+                    className="border rounded-lg p-4 hover:border-blue-200 transition-colors cursor-pointer"
+                    onClick={() => setSelectedCase(caseItem)}
+                  >
+                    <div className="flex flex-col md:flex-row md:justify-between md:items-start mb-3">
+                      <div>
+                        <div className="flex items-center">
+                          <h3 className="font-medium">{caseItem.title}</h3>
+                          <span className="ml-2 text-xs text-gray-500 border rounded px-2 py-0.5">
+                            {caseItem.caseNumber}
+                          </span>
+                        </div>
+                        <div className="flex items-center mt-1 text-gray-500 text-sm space-x-2">
+                          <span>{caseItem.date}</span>
+                          <span>•</span>
+                          <span>{caseItem.category}</span>
+                        </div>
+                      </div>
+                      <span className={`px-2 py-1 rounded text-xs mt-2 md:mt-0 ${getStatusColor(caseItem.status)}`}>
+                        {caseItem.statusText}
+                      </span>
+                    </div>
+                    
+                    <p className="text-sm text-gray-600 mb-3 line-clamp-1">{caseItem.description}</p>
+                    
+                    <div className="space-y-2">
+                      <div className="text-xs text-gray-500 mb-1">Case Progress</div>
+                      <div className="relative h-2 w-full bg-gray-200 rounded-full overflow-hidden">
+                        <div 
+                          className={`absolute left-0 top-0 h-full ${getProgressColor(caseItem.progress)}`}
+                          style={{ width: `${caseItem.progress}%` }}
+                        ></div>
+                      </div>
+                      <div className="flex justify-between text-xs text-gray-500">
+                        <span>Submitted</span>
+                        <span>{caseItem.progress}%</span>
+                        <span>Resolved</span>
+                      </div>
+                    </div>
+                    
+                    <div className="mt-3 pt-3 border-t flex justify-between items-center">
+                      <div className="flex items-center text-xs text-gray-500">
+                        <span className="font-medium mr-1">Assigned to:</span>
+                        {caseItem.officer !== "Unassigned" ? caseItem.officer : "Pending Assignment"}
+                      </div>
+                      <Button size="sm" variant="outline">
+                        <FileSearch className="h-3 w-3 mr-1" /> View Details
+                      </Button>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-8">
+                  <FileSearch className="h-10 w-10 mx-auto text-gray-400 mb-2" />
+                  <h3 className="font-medium text-gray-500">No cases found</h3>
+                  <p className="text-gray-400 text-sm mt-1">Try adjusting your search criteria</p>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Case Detail Modal */}
+      {selectedCase && (
+        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50 p-4 overflow-y-auto">
+          <Card className="w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+            <CardHeader>
+              <div className="flex items-start justify-between">
+                <div>
+                  <CardTitle className="flex items-center">
+                    {selectedCase.title}
+                    <span className="ml-2 text-sm text-gray-500 border rounded px-2 py-0.5">
+                      {selectedCase.caseNumber}
+                    </span>
+                  </CardTitle>
+                  <CardDescription>{selectedCase.date}</CardDescription>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <span className={`px-2 py-1 rounded text-xs ${getStatusColor(selectedCase.status)}`}>
+                    {selectedCase.statusText}
+                  </span>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="h-8 w-8 p-0" 
+                    onClick={() => setSelectedCase(null)}
+                  >
+                    <span className="sr-only">Close</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </Button>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <h3 className="text-sm font-medium mb-2">Case Information</h3>
+                  <div className="bg-gray-50 p-4 rounded-md space-y-2">
+                    <div>
+                      <span className="text-xs text-gray-500 block">Description</span>
+                      <p className="text-sm">{selectedCase.description}</p>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <span className="text-xs text-gray-500 block">Category</span>
+                        <p className="text-sm">{selectedCase.category}</p>
+                      </div>
+                      <div>
+                        <span className="text-xs text-gray-500 block">Location</span>
+                        <p className="text-sm">{selectedCase.location}</p>
+                      </div>
+                      <div>
+                        <span className="text-xs text-gray-500 block">Assigned Officer</span>
+                        <p className="text-sm">{selectedCase.officer}</p>
+                      </div>
+                      <div>
+                        <span className="text-xs text-gray-500 block">Last Updated</span>
+                        <p className="text-sm">{selectedCase.lastUpdated}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-sm font-medium mb-2">Case Progress</h3>
+                  <div className="bg-gray-50 p-4 rounded-md">
+                    <div className="space-y-2">
+                      <div className="text-xs text-gray-500">Overall Progress</div>
+                      <div className="relative h-2 w-full bg-gray-200 rounded-full overflow-hidden">
+                        <div 
+                          className={`absolute left-0 top-0 h-full ${getProgressColor(selectedCase.progress)}`}
+                          style={{ width: `${selectedCase.progress}%` }}
+                        ></div>
+                      </div>
+                      <div className="flex justify-between text-xs text-gray-500">
+                        <span>Submitted</span>
+                        <span>{selectedCase.progress}% Complete</span>
+                        <span>Resolved</span>
+                      </div>
+                    </div>
+                    
+                    {selectedCase.status === "resolved" && selectedCase.resolution && (
+                      <div className="mt-4 pt-4 border-t">
+                        <h4 className="text-sm font-medium mb-2 flex items-center">
+                          <CheckCircle className="h-4 w-4 mr-1 text-green-500" />
+                          Resolution
+                        </h4>
+                        <div className="bg-green-50 p-3 rounded-md text-sm">
+                          <p className="text-green-800 font-medium">{selectedCase.resolution.outcome}</p>
+                          <p className="text-green-700 mt-1">{selectedCase.resolution.details}</p>
+                          <div className="flex justify-between mt-2 text-xs text-green-600">
+                            <span>Resolved on: {selectedCase.resolution.date}</span>
+                            <span>{selectedCase.resolution.actionTaken}</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-sm font-medium mb-3">Case Timeline</h3>
+                <div className="relative space-y-0">
+                  {selectedCase.timeline.map((event, index) => (
+                    <div key={index} className="flex gap-4 pb-8 last:pb-0 relative">
+                      {/* Vertical line */}
+                      {index < selectedCase.timeline.length - 1 && (
+                        <div className={`absolute left-[15px] top-[24px] w-0.5 h-full ${event.status === 'upcoming' ? 'bg-gray-200' : event.status === 'current' ? 'bg-blue-200' : 'bg-green-200'}`}></div>
+                      )}
+                      
+                      {/* Icon */}
+                      <div className={`z-10 flex items-center justify-center w-8 h-8 rounded-full ${
+                        event.status === 'upcoming' ? 'bg-gray-200 text-gray-500' :
+                        event.status === 'current' ? 'bg-blue-200 text-blue-700' :
+                        'bg-green-200 text-green-700'
+                      }`}>
+                        {getTimelineIcon(event.icon)}
+                      </div>
+                      
+                      {/* Content */}
+                      <div className="flex-1">
+                        <h4 className="text-sm font-medium">{event.event}</h4>
+                        <div className="flex space-x-2 text-xs text-gray-500 mt-1">
+                          {event.date && <span>{event.date}</span>}
+                          {event.time && (
+                            <>
+                              <span>•</span>
+                              <span>{event.time}</span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {selectedCase.evidence && selectedCase.evidence.length > 0 && (
+                <div>
+                  <h3 className="text-sm font-medium mb-2">Submitted Evidence</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {selectedCase.evidence.map(item => (
+                      <div key={item.id} className="border rounded-md p-3 flex items-center gap-3">
+                        <div className={`w-10 h-10 rounded-md bg-gray-100 flex items-center justify-center ${
+                          item.type === 'image' ? 'text-blue-500' :
+                          item.type === 'video' ? 'text-red-500' :
+                          item.type === 'audio' ? 'text-purple-500' :
+                          'text-green-500'
+                        }`}>
+                          {getEvidenceIcon(item.type)}
+                        </div>
+                        <div className="flex-1">
+                          <h4 className="text-sm font-medium">{item.name}</h4>
+                          <p className="text-xs text-gray-500">Submitted on {item.date}</p>
+                        </div>
+                        <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
+                          <FileSearch className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Contact information */}
+              {selectedCase.officer !== "Unassigned" && (
+                <div className="bg-blue-50 p-4 rounded-md">
+                  <h3 className="text-sm font-medium mb-2 flex items-center text-blue-800">
+                    <MessageCircle className="h-4 w-4 mr-1" />
+                    Contact Information
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="text-xs text-blue-700 block">Assigned Officer</span>
+                      <p className="font-medium text-blue-900">{selectedCase.officer}</p>
+                      {selectedCase.officerId && (
+                        <p className="text-xs text-blue-700">ID: {selectedCase.officerId}</p>
+                      )}
+                    </div>
+                    <div>
+                      <span className="text-xs text-blue-700 block">Contact</span>
+                      {selectedCase.officerContact ? (
+                        <p className="text-blue-900">{selectedCase.officerContact}</p>
+                      ) : (
+                        <p className="text-blue-900">Contact through system messaging</p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="mt-3 flex gap-2">
+                    <Button size="sm" variant="outline" className="w-full text-blue-700 border-blue-300 hover:bg-blue-100">
+                      <MessageCircle className="h-4 w-4 mr-1" />
+                      Send Message
+                    </Button>
+                    {selectedCase.officerContact && (
+                      <Button size="sm" variant="outline" className="w-full text-blue-700 border-blue-300 hover:bg-blue-100">
+                        <Mail className="h-4 w-4 mr-1" />
+                        Send Email
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+            <CardFooter className="flex justify-between border-t pt-4">
+              <Button variant="ghost" size="sm" onClick={() => setSelectedCase(null)}>
+                Close Details
+              </Button>
+              
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm">
+                  <MessageCircle className="mr-1 h-4 w-4" />
+                  Add Comment
+                </Button>
+                <Button size="sm">
+                  <FileText className="mr-1 h-4 w-4" />
+                  {selectedCase.status === "resolved" ? "View Report" : "Update Case"}
+                </Button>
+              </div>
+            </CardFooter>
+          </Card>
+        </div>
+      )}
+    </div>
+  );
+};
+
 // Main dashboard content component
 const DashboardHome = () => {
   return (
@@ -676,98 +1797,19 @@ export default function CitizenDashboard() {
         <Route path="find-station/*" element={
           <div className="p-6">
             <h2 className="text-2xl font-bold mb-6">Find Police Station</h2>
-            <Card>
-              <CardHeader>
-                <CardTitle>Nearby Police Stations</CardTitle>
-                <CardDescription>Police stations in your vicinity</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="border rounded-lg p-3">
-                    <h3 className="font-medium">Central Police Station</h3>
-                    <p className="text-sm text-gray-500">2.3 km away</p>
-                    <div className="mt-2 flex">
-                      <Button size="sm" variant="outline" className="text-xs">
-                        <MapPin className="mr-1 h-3 w-3" /> Directions
-                      </Button>
-                      <Button size="sm" variant="outline" className="ml-2 text-xs">
-                        <Bell className="mr-1 h-3 w-3" /> Contact
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            <FindStationContent />
           </div>
         } />
         <Route path="notifications/*" element={
           <div className="p-6">
             <h2 className="text-2xl font-bold mb-6">Notifications</h2>
-            <Card>
-              <CardHeader>
-                <CardTitle>Recent Notifications</CardTitle>
-                <CardDescription>Updates on your reports</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="border rounded-lg p-4">
-                    <div className="flex items-center gap-2">
-                      <Bell className="h-4 w-4 text-blue-500" />
-                      <div>
-                        <h3 className="font-medium">Case Update: Theft Report #12345</h3>
-                        <p className="text-sm text-gray-500">Your case has been assigned to Officer Johnson.</p>
-                        <p className="text-xs text-gray-400 mt-1">Today, 10:30 AM</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            <NotificationsContent />
           </div>
         } />
         <Route path="track/*" element={
           <div className="p-6">
             <h2 className="text-2xl font-bold mb-6">Track Your Cases</h2>
-            <Card>
-              <CardHeader>
-                <CardTitle>Case Status</CardTitle>
-                <CardDescription>Monitor the progress of your cases</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="border rounded-lg p-4">
-                    <h3 className="font-medium">Theft Report #12345</h3>
-                    <p className="text-sm text-gray-500 mb-4">Submitted on March 15, 2025</p>
-                    <div className="relative">
-                      <div className="absolute left-0 top-1/2 transform -translate-y-1/2 w-full h-1 bg-gray-200 z-0"></div>
-                      <div className="absolute left-0 top-1/2 transform -translate-y-1/2 w-3/5 h-1 bg-blue-500 z-10"></div>
-                      <div className="relative z-20 flex justify-between">
-                        <div className="flex flex-col items-center">
-                          <div className="w-6 h-6 rounded-full bg-blue-500 text-white flex items-center justify-center text-xs">✓</div>
-                          <span className="text-xs mt-1">Submitted</span>
-                        </div>
-                        <div className="flex flex-col items-center">
-                          <div className="w-6 h-6 rounded-full bg-blue-500 text-white flex items-center justify-center text-xs">✓</div>
-                          <span className="text-xs mt-1">Reviewed</span>
-                        </div>
-                        <div className="flex flex-col items-center">
-                          <div className="w-6 h-6 rounded-full bg-blue-500 text-white flex items-center justify-center text-xs">✓</div>
-                          <span className="text-xs mt-1">Assigned</span>
-                        </div>
-                        <div className="flex flex-col items-center">
-                          <div className="w-6 h-6 rounded-full bg-yellow-500 text-white flex items-center justify-center text-xs">⋯</div>
-                          <span className="text-xs mt-1">Investigating</span>
-                        </div>
-                        <div className="flex flex-col items-center">
-                          <div className="w-6 h-6 rounded-full bg-gray-300 text-white flex items-center justify-center text-xs"></div>
-                          <span className="text-xs mt-1">Resolved</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            <TrackCaseContent />
           </div>
         } />
         <Route path="support/*" element={
