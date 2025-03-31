@@ -10,7 +10,7 @@ export default function OfficerLogin() {
       title="Officer Portal Login"
       subtitle="Enter your credentials to access the officer portal"
       role="officer"
-      redirectUrl="/officer/dashboard"
+      redirectUrl="/officer-dashboard"
       showExtraLinks={false}
       extraFields={
         <div className="space-y-2">

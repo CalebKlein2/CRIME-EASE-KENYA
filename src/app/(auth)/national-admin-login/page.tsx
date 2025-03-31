@@ -10,7 +10,7 @@ export default function NationalAdminLogin() {
       title="National Admin Login"
       subtitle="Enter your credentials to access the national police administration portal"
       role="national_admin"
-      redirectUrl="/national-admin/national-dashboard"
+      redirectUrl="/national-dashboard"
       showExtraLinks={false}
       extraFields={
         <div className="space-y-2">

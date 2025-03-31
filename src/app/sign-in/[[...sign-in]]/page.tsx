@@ -23,18 +23,34 @@ export default function SignInPage() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, setUserRole } = useAuth();
-  const { isSignedIn } = useUser();
+  const { isSignedIn, isLoaded } = useUser();
   const [selectedRole, setSelectedRole] = useState<UserRole>("citizen");
   
   // Parse role from URL query parameter
   useEffect(() => {
     const params = new URLSearchParams(location.search);
-    const roleParam = params.get("role") as UserRole | null;
-    
+    const roleParam = params.get('role') as UserRole | null;
     if (roleParam && ["citizen", "officer", "station_admin", "national_admin"].includes(roleParam)) {
       setSelectedRole(roleParam);
+      console.log(`[SignIn] Role set from URL: ${roleParam}`);
     }
   }, [location]);
+
+  // Automatically redirect if already signed in
+  useEffect(() => {
+    // If a user is already signed in, check if they're on the sign-in page
+    if (isSignedIn && isLoaded) {
+      console.log("[SignIn] User already signed in, redirecting to appropriate dashboard");
+      
+      // Get the current role and redirect to appropriate dashboard
+      const currentRole = user?.role || selectedRole || "citizen";
+      const redirectOption = roleOptions.find(option => option.id === currentRole) || roleOptions[0];
+      
+      // Redirect to the appropriate dashboard
+      console.log(`[SignIn] Auto-redirecting to: ${redirectOption.redirectPath}`);
+      window.location.href = redirectOption.redirectPath;
+    }
+  }, [isSignedIn, isLoaded, user, selectedRole]);
 
   // Redirect to appropriate dashboard if already signed in
   useEffect(() => {
@@ -92,14 +108,76 @@ export default function SignInPage() {
     }
   };
 
-  const handleSignInComplete = async () => {
-    if (user) {
-      // If the user has selected a different role than their current one
-      if (user.role !== selectedRole) {
-        await setUserRole(selectedRole);
+  // Function to handle sign-in completion
+  const handleSignInComplete = async (result: any) => {
+    console.log("[SignIn] Sign-in completed", {
+      selectedRole: selectedRole
+    });
+    
+    try {
+      // Wait for auth context to initialize (longer delay to ensure Clerk is ready)
+      console.log("[SignIn] Waiting for auth context to initialize...");
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // Debug: Log the current user from Clerk
+      const clerkClient = (window as any).Clerk;
+      if (clerkClient && clerkClient.user) {
+        console.log("[SignIn] Current Clerk user:", {
+          id: clerkClient.user.id,
+          firstName: clerkClient.user.firstName,
+          lastName: clerkClient.user.lastName,
+          metadata: clerkClient.user.publicMetadata
+        });
+        
+        // Ensure the role is set in Clerk metadata
+        try {
+          // Check if role is already set and matches selected role
+          const currentRole = clerkClient.user.publicMetadata?.role;
+          
+          if (currentRole !== selectedRole) {
+            console.log(`[SignIn] Current role (${currentRole}) doesn't match selected role (${selectedRole}), updating...`);
+            
+            // Update the role in Clerk
+            await clerkClient.user.update({
+              publicMetadata: {
+                ...(clerkClient.user.publicMetadata || {}),
+                role: selectedRole
+              }
+            });
+            console.log(`[SignIn] Updated Clerk metadata with role ${selectedRole}`);
+            
+            // Force a session refresh
+            await clerkClient.session.touch();
+            console.log("[SignIn] Refreshed Clerk session");
+          } else {
+            console.log(`[SignIn] Role already set to ${selectedRole}, no update needed`);
+          }
+        } catch (e) {
+          console.error("[SignIn] Error updating Clerk metadata:", e);
+        }
       }
       
+      // Set the role explicitly using the AuthContext
+      if (setUserRole) {
+        console.log(`[SignIn] Setting user role to ${selectedRole}`);
+        
+        try {
+          await setUserRole(selectedRole);
+          console.log(`[SignIn] User role set to ${selectedRole}`);
+          
+          // Wait for role to be properly set in both Clerk and Convex
+          console.log("[SignIn] Waiting for role to propagate...");
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        } catch (roleError) {
+          console.error("[SignIn] Error in setUserRole:", roleError);
+        }
+      }
+      
+      // Redirect to the appropriate dashboard
+      console.log(`[SignIn] Redirecting to: ${selectedRoleOption.redirectPath}`);
       redirectToRoleDashboard(selectedRole);
+    } catch (error) {
+      console.error("[SignIn] Error setting user role:", error);
     }
   };
 
@@ -218,8 +296,10 @@ export default function SignInPage() {
                 }}
                 routing="path"
                 path="/sign-in"
-                redirectUrl={`/dashboard?role=${selectedRole}`}
+                redirectUrl={selectedRoleOption.redirectPath}
                 signUpUrl={`/sign-up?role=${selectedRole}`}
+                afterSignInUrl={selectedRoleOption.redirectPath}
+                afterSignIn={handleSignInComplete}
               />
             </div>
           </CardContent>

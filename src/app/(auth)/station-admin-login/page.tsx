@@ -10,7 +10,7 @@ export default function StationAdminLogin() {
       title="Station Admin Login"
       subtitle="Enter your credentials to access the station administration portal"
       role="station_admin"
-      redirectUrl="/station-admin/station-dashboard"
+      redirectUrl="/station-dashboard"
       showExtraLinks={false}
       extraFields={
         <div className="space-y-2">

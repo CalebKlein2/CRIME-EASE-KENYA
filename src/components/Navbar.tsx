@@ -49,11 +49,11 @@ export default function Navbar() {
 function getDashboardUrl(role?: string) {
   switch (role) {
     case "officer":
-      return "/officer/dashboard";
+      return "/officer-dashboard";
     case "station_admin":
-      return "/station-admin/station-dashboard";
+      return "/station-dashboard";
     case "national_admin":
-      return "/national-admin/national-dashboard";
+      return "/national-dashboard";
     case "citizen":
       return "/citizen-dashboard";
     default:

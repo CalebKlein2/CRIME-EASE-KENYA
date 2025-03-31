@@ -22,24 +22,24 @@ export function DashboardRedirect({ preferredRole }: { preferredRole?: string })
       switch (role) {
         case "citizen":
           console.log(`[DashboardRedirect] Redirecting to citizen dashboard`);
-          navigate("/citizen/dashboard", { replace: true });
+          navigate("/citizen-dashboard", { replace: true });
           break;
         case "officer":
           console.log(`[DashboardRedirect] Redirecting to officer dashboard`);
-          navigate("/officer/dashboard", { replace: true });
+          navigate("/officer-dashboard", { replace: true });
           break;
         case "station_admin":
           console.log(`[DashboardRedirect] Redirecting to station dashboard`);
-          navigate("/station-admin/station-dashboard", { replace: true });
+          navigate("/station-dashboard", { replace: true });
           break;
         case "national_admin":
           console.log(`[DashboardRedirect] Redirecting to national dashboard`);
-          navigate("/national-admin/national-dashboard", { replace: true });
+          navigate("/national-dashboard", { replace: true });
           break;
         default:
           console.log(`[DashboardRedirect] Unknown role: ${role}, defaulting to citizen dashboard`);
           // Fallback to citizen dashboard
-          navigate("/citizen/dashboard", { replace: true });
+          navigate("/citizen-dashboard", { replace: true });
       }
     };
 
@@ -51,112 +51,67 @@ export function DashboardRedirect({ preferredRole }: { preferredRole?: string })
         return;
       }
 
-      // If not signed in, redirect to sign-in page
-      if (!isSignedIn || !user) {
-        console.log(`[DashboardRedirect] User not signed in or user data missing, redirecting to sign-in`);
-        navigate("/sign-in");
-        setRedirectAttempted(true);
+      setRedirectAttempted(true);
+      
+      // If a preferred role was directly passed as a prop, use that
+      if (preferredRole) {
+        console.log(`[DashboardRedirect] Using preferred role from props: ${preferredRole}`);
+        handleRoleBasedRedirect(preferredRole);
         return;
       }
-
-      console.log(`[DashboardRedirect] User authenticated:`, {
-        userId: user.id,
-        clerkId: user.clerkId,
-        currentRole: user.role,
-        isFullyLoaded: !!user.role
-      });
-
-      // Check for role override in URL query params
-      const params = new URLSearchParams(location.search);
-      const urlRole = params.get("role");
-      console.log(`[DashboardRedirect] Role from URL: ${urlRole || 'none'}`);
-
-      // Determine which role to use (URL param > passed prop > user's current role)
-      let targetRole = urlRole || preferredRole || user.role;
-      console.log(`[DashboardRedirect] Selected target role: ${targetRole} (URL > prop > user's role)`);
-
-      // Validate the role is one of our accepted roles
-      if (!["citizen", "officer", "station_admin", "national_admin"].includes(targetRole)) {
-        console.log(`[DashboardRedirect] Invalid role: ${targetRole}, defaulting to citizen`);
-        targetRole = "citizen"; // Default to citizen if invalid role
-      }
-
-      // If we have a role from URL or prop, and it's different from the user's stored role
-      // we need to update it in our database
-      if ((urlRole || preferredRole) && targetRole !== user.role) {
-        console.log(`[DashboardRedirect] Role change detected. Changing from ${user.role} to ${targetRole}`);
-        try {
-          console.log(`[DashboardRedirect] Updating user role in database to: ${targetRole}`);
-          await setUserRole(targetRole as any);
-          
-          // Since we're changing roles, refresh user data to get updated permissions
-          console.log(`[DashboardRedirect] Refreshing user data after role change`);
-          await refreshUser();
-          
-          // Short delay to ensure database consistency
-          console.log(`[DashboardRedirect] Adding small delay to ensure database consistency`);
-          await new Promise(resolve => setTimeout(resolve, 500));
-          
-          // Now redirect based on new role
-          console.log(`[DashboardRedirect] Redirecting based on new role: ${targetRole}`);
-        } catch (error) {
-          console.error(`[DashboardRedirect] Error updating role:`, error);
-        }
-      }
-
-      console.log(`[DashboardRedirect] Final redirection decision - role: ${targetRole}`);
       
-      // Final redirect based on role
-      handleRoleBasedRedirect(targetRole);
-      setRedirectAttempted(true);
+      // Check if a preferred role is specified in the URL
+      const params = new URLSearchParams(location.search);
+      const roleParam = params.get("role");
+      
+      if (roleParam) {
+        console.log(`[DashboardRedirect] Found role parameter in URL: ${roleParam}`);
+        
+        // If user is not loaded or not signed in, we'll first attempt to set the role
+        if (!isSignedIn && roleParam) {
+          try {
+            console.log(`[DashboardRedirect] Attempting to set user role to: ${roleParam}`);
+            await setUserRole(roleParam as any);
+            await refreshUser();
+          } catch (error) {
+            console.error("[DashboardRedirect] Error setting role:", error);
+          }
+        }
+        
+        // Then redirect to the appropriate dashboard for this role
+        handleRoleBasedRedirect(roleParam);
+        return;
+      }
+      
+      // Otherwise use the current user's role if available
+      if (user && user.role) {
+        console.log(`[DashboardRedirect] Using existing user role: ${user.role}`);
+        handleRoleBasedRedirect(user.role);
+        return;
+      }
+      
+      // If we got here and the user isn't loaded, wait for a delay and try again
+      if (!user && redirectDelay < 3) {
+        const newDelay = redirectDelay + 1;
+        console.log(`[DashboardRedirect] User not loaded, setting delay to ${newDelay}`);
+        setRedirectDelay(newDelay);
+        setRedirectAttempted(false);
+        setTimeout(attemptRedirect, 1000); // Try again in 1 second
+      } else {
+        // If we still can't determine a role, redirect to login
+        console.log(`[DashboardRedirect] Unable to determine user role, redirecting to login`);
+        navigate("/login", { replace: true });
+      }
     };
 
-    // Add a slight delay to allow for database synchronization if we haven't attempted redirect
-    if (!redirectAttempted && !isLoading) {
-      console.log(`[DashboardRedirect] Setting timer for redirect attempt with delay: ${redirectDelay}ms`);
-      // Increasing delay for subsequent attempts can help with race conditions
-      const timer = setTimeout(attemptRedirect, redirectDelay);
-      setRedirectDelay(prev => {
-        const newDelay = prev + 500;
-        console.log(`[DashboardRedirect] Increasing delay for next attempt to: ${newDelay}ms`);
-        return newDelay;
-      }); // Increase delay for next attempt if needed
-      return () => {
-        console.log(`[DashboardRedirect] Clearing redirect timer`);
-        clearTimeout(timer);
-      };
-    }
-  }, [user, isLoading, isSignedIn, navigate, location.search, preferredRole, setUserRole, redirectAttempted, redirectDelay, refreshUser]);
+    attemptRedirect();
+  }, [navigate, location, user, isLoading, preferredRole, redirectAttempted, redirectDelay, setUserRole, refreshUser, isSignedIn]);
 
-  // If we've attempted redirect but we're still here, try a refresh
-  useEffect(() => {
-    if (redirectAttempted && user && isSignedIn && !isLoading) {
-      console.log(`[DashboardRedirect] Redirect was attempted but still on redirect page. User data:`, {
-        userId: user.id,
-        role: user.role,
-        isSignedIn: isSignedIn
-      });
-      // If we've already attempted to redirect but something went wrong, try refreshing user data
-      console.log(`[DashboardRedirect] Setting timer to refresh user data and retry redirection`);
-      const timer = setTimeout(async () => {
-        console.log(`[DashboardRedirect] Refreshing user data for retry`);
-        await refreshUser();
-        console.log(`[DashboardRedirect] Resetting redirectAttempted to false to try again`);
-        setRedirectAttempted(false); // Reset to try redirection again
-      }, 1000);
-      
-      return () => {
-        console.log(`[DashboardRedirect] Clearing refresh timer`);
-        clearTimeout(timer);
-      };
-    }
-  }, [redirectAttempted, user, isSignedIn, isLoading, refreshUser]);
-
-  // Show a loading state while redirecting
+  // Show loading spinner while determining where to redirect
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50">
-      <div className="w-16 h-16 border-t-4 border-blue-600 border-solid rounded-full animate-spin"></div>
-      <h2 className="mt-4 text-xl font-medium text-gray-700">Redirecting to your dashboard...</h2>
+    <div className="flex items-center justify-center h-screen">
+      <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-700"></div>
+      <p className="ml-4 text-lg">Redirecting to your dashboard...</p>
     </div>
   );
 }

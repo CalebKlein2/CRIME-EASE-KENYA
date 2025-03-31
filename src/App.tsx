@@ -13,9 +13,9 @@ import { Toaster } from "./components/ui/toaster";
 
 // Import role-specific dashboard pages
 const CitizenDashboard = lazy(() => import("./app/citizen/dashboard/page"));
-const OfficerDashboard = lazy(() => import("./app/(officer)/dashboard/page"));
-const StationAdminDashboard = lazy(() => import("./app/(station-admin)/station-dashboard/page"));
-const NationalAdminDashboard = lazy(() => import("./app/(national-admin)/national-dashboard/page"));
+const OfficerDashboard = lazy(() => import("./app/officer/dashboard/page"));
+const StationAdminDashboard = lazy(() => import("./app/station-admin/dashboard/page"));
+const NationalAdminDashboard = lazy(() => import("./app/national-admin/national-dashboard/page"));
 
 // Import authentication pages
 const SignUpPage = lazy(() => import("./app/sign-up/[[...sign-up]]/page"));

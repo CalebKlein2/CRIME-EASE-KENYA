@@ -26,13 +26,13 @@ export function AuthRoutes() {
         redirectPath = "/citizen-dashboard";
         break;
       case "officer":
-        redirectPath = "/officer/dashboard";
+        redirectPath = "/officer-dashboard";
         break;
       case "station_admin":
-        redirectPath = "/station-admin/station-dashboard";
+        redirectPath = "/station-dashboard";
         break;
       case "national_admin":
-        redirectPath = "/national-admin/national-dashboard";
+        redirectPath = "/national-dashboard";
         break;
     }
     

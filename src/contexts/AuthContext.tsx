@@ -58,26 +58,96 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   
   // Convex mutations
   const updateUserRole = useMutation(api.users.updateUserRole);
+  const createUser = useMutation(api.users.createFromClerk);
   const convexUser = useQuery(
     api.users.getByClerkId, 
     clerkUser?.id ? { clerkId: clerkUser.id } : "skip"
   );
+  
+  // Debug logging for Convex query status
+  useEffect(() => {
+    if (clerkUser?.id) {
+      console.log("[AuthContext] Convex query status:", {
+        hasClerkId: !!clerkUser?.id,
+        convexQueryParam: clerkUser?.id ? { clerkId: clerkUser.id } : "skip",
+        convexUserResult: convexUser
+      });
+    }
+  }, [clerkUser?.id, convexUser]);
 
   useEffect(() => {
     if (!clerkLoaded) return;
 
     const syncUserWithDatabase = async () => {
+      console.log("[AuthContext] Starting user sync", { 
+        isSignedIn, 
+        clerkLoaded,
+        hasClerkUser: !!clerkUser,
+        hasConvexUser: !!convexUser
+      });
+      
+      // If the user has logged out, clear user state
       if (!clerkUser) {
+        console.log("[AuthContext] No Clerk user, setting user to null");
         setUser(null);
         setIsLoading(false);
         return;
       }
 
+      // Get the user's role from Clerk metadata
+      let clerkRole: UserRole = "citizen"; // Default role
+      
+      // Try to get role from JWT first
+      if (clerkUser.publicMetadata && clerkUser.publicMetadata.role) {
+        clerkRole = clerkUser.publicMetadata.role as UserRole;
+        console.log(`[AuthContext] Role from Clerk metadata: ${clerkRole}`);
+      } else {
+        // If not in JWT, try to get it directly from Clerk
+        console.log(`[AuthContext] Role not found in JWT, fetching from Clerk directly`);
+        try {
+          // @ts-ignore - Clerk type definitions don't properly expose publicMetadata
+          const metadata = clerkUser.publicMetadata || {};
+          if (metadata.role) {
+            clerkRole = metadata.role as UserRole;
+            console.log(`[AuthContext] Role fetched from Clerk: ${clerkRole}`);
+          } else {
+            console.log(`[AuthContext] No role found in Clerk, using default: ${clerkRole}`);
+          }
+        } catch (metadataError) {
+          console.error("[AuthContext] Error getting metadata from Clerk:", metadataError);
+          console.log(`[AuthContext] Using default role: ${clerkRole}`);
+        }
+      }
+
+      // Set a timeout for Convex connection
+      let convexTimeout: NodeJS.Timeout | null = setTimeout(() => {
+        console.log("[AuthContext] Convex connection timed out, using fallback user");
+        
+        // If Convex is taking too long, create a fallback user
+        setUser({
+          id: clerkUser.id,
+          email: clerkUser.primaryEmailAddress?.emailAddress || "",
+          full_name: `${clerkUser.firstName || ""} ${clerkUser.lastName || ""}`.trim(),
+          role: clerkRole,
+          // Add role-specific fields for fallback functionality
+          badge_number: clerkRole === "officer" || clerkRole === "station_admin" ? 
+            `TEMP-${clerkUser.id.substring(0, 6)}` : undefined,
+          station_code: clerkRole === "officer" || clerkRole === "station_admin" ? 
+            "PLACEHOLDER" : undefined,
+          security_code: clerkRole === "national_admin" ? 
+            "NAT-ADMIN-FALLBACK" : undefined
+        });
+        setIsLoading(false);
+      }, 4000); // 4 second timeout
+
       try {
-        // Get role from Clerk metadata first
-        const clerkUserResource = clerkUser as UserResource;
-        const clerkRole = (clerkUserResource.publicMetadata?.role as UserRole) || "citizen";
-        console.log(`[AuthContext] Role from Clerk metadata:`, clerkRole);
+        // Set basic user data from Clerk
+        setUser({
+          id: clerkUser.id,
+          email: clerkUser.primaryEmailAddress?.emailAddress || "",
+          full_name: `${clerkUser.firstName || ""} ${clerkUser.lastName || ""}`.trim(),
+          role: clerkRole,
+        });
 
         // Try to get user from Convex
         if (convexUser) {
@@ -107,33 +177,90 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             id: clerkUser.id,
             email: clerkUser.primaryEmailAddress?.emailAddress || "",
             full_name: typedConvexUser.full_name || `${clerkUser.firstName || ""} ${clerkUser.lastName || ""}`.trim(),
-            role: clerkRole || typedConvexUser.role,
+            role: clerkRole,
             badge_number: officerData.badge_number,
             station_id: officerData.station_id,
             station_code: officerData.station_code,
-            security_code: (clerkRole || typedConvexUser.role) === "national_admin" ? "NAT-ADMIN-001" : undefined
+            security_code: clerkRole === "national_admin" ? "NAT-ADMIN-001" : undefined
           });
         } else {
-          console.log(`[AuthContext] User not found in Convex, using Clerk data`);
-          // Set basic user data from Clerk
-          setUser({
-            id: clerkUser.id,
-            email: clerkUser.primaryEmailAddress?.emailAddress || "",
-            full_name: `${clerkUser.firstName || ""} ${clerkUser.lastName || ""}`.trim(),
-            role: clerkRole,
-          });
+          console.log(`[AuthContext] User not found in Convex, creating new user`);
+          
+          // User doesn't exist in Convex yet, create them
+          // Add retry logic for initial user creation
+          let retries = 0;
+          const maxRetries = 3;
+          let success = false;
+          
+          while (!success && retries < maxRetries) {
+            try {
+              // Create the user in Convex
+              const result = await createUser({
+                clerkId: clerkUser.id,
+                email: clerkUser.primaryEmailAddress?.emailAddress || "",
+                fullName: `${clerkUser.firstName || ""} ${clerkUser.lastName || ""}`.trim(),
+                profileImage: clerkUser.imageUrl,
+                phoneNumber: clerkUser.phoneNumbers?.[0]?.phoneNumber,
+                role: clerkRole
+              });
+              
+              console.log(`[AuthContext] Created new user in Convex:`, result);
+              success = true;
+              
+              // Set basic user data from Clerk
+              setUser({
+                id: clerkUser.id,
+                email: clerkUser.primaryEmailAddress?.emailAddress || "",
+                full_name: `${clerkUser.firstName || ""} ${clerkUser.lastName || ""}`.trim(),
+                role: clerkRole,
+              });
+            } catch (error) {
+              retries++;
+              console.error(`[AuthContext] Error creating user in Convex (attempt ${retries}/${maxRetries}):`, error);
+              
+              if (retries < maxRetries) {
+                // Wait before retrying (exponential backoff)
+                const waitTime = Math.pow(2, retries) * 500;
+                console.log(`[AuthContext] Retrying in ${waitTime}ms...`);
+                await new Promise(resolve => setTimeout(resolve, waitTime));
+              } else {
+                console.error("[AuthContext] Failed to create user after multiple attempts");
+                
+                // CRITICAL: Create a fallback user even if Convex is down
+                console.log("[AuthContext] Creating fallback local-only user with role from Clerk");
+                setUser({
+                  id: clerkUser.id,
+                  email: clerkUser.primaryEmailAddress?.emailAddress || "",
+                  full_name: `${clerkUser.firstName || ""} ${clerkUser.lastName || ""}`.trim(),
+                  role: clerkRole,
+                  // Add role-specific fields for fallback functionality
+                  badge_number: clerkRole === "officer" || clerkRole === "station_admin" ? 
+                    `TEMP-${clerkUser.id.substring(0, 6)}` : undefined,
+                  station_code: clerkRole === "officer" || clerkRole === "station_admin" ? 
+                    "PLACEHOLDER" : undefined,
+                  security_code: clerkRole === "national_admin" ? 
+                    "NAT-ADMIN-FALLBACK" : undefined
+                });
+                console.log("[AuthContext] Fallback user created:", {
+                  role: clerkRole, 
+                  name: `${clerkUser.firstName || ""} ${clerkUser.lastName || ""}`.trim()
+                });
+              }
+            }
+          }
         }
       } catch (error) {
         console.error("[AuthContext] Error syncing user:", error);
       }
       
+      clearTimeout(convexTimeout as NodeJS.Timeout);
       setIsLoading(false);
     };
 
     syncUserWithDatabase();
   }, [clerkUser, clerkLoaded, convexUser]);
 
-  // Function to update user role
+  // Function to update user role with retry logic
   const setUserRole = async (role: UserRole) => {
     if (!user) return;
     
@@ -141,28 +268,101 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log(`[AuthContext] Updating user role to ${role}`);
       
       // First update Clerk metadata
-      const clerkUserResource = clerkUser as UserResource;
-      // @ts-ignore - Clerk type definitions don't properly expose publicMetadata
-      await clerkUserResource.update({
-        publicMetadata: {
-          ...clerkUserResource.publicMetadata,
-          role: role
+      try {
+        // @ts-ignore - Clerk type definitions don't properly expose publicMetadata
+        await clerkUser.update({
+          publicMetadata: {
+            ...(clerkUser.publicMetadata || {}),
+            role: role
+          }
+        });
+        console.log(`[AuthContext] Updated Clerk metadata with role ${role}`);
+        
+        // Force a session refresh to ensure the token has the updated metadata
+        try {
+          // @ts-ignore - Using window.Clerk directly
+          if (typeof window !== 'undefined' && window.Clerk) {
+            await window.Clerk.session.touch();
+            console.log(`[AuthContext] Refreshed Clerk session`);
+          }
+        } catch (refreshError) {
+          console.error("[AuthContext] Error refreshing session:", refreshError);
+          // Continue anyway
         }
-      });
-      console.log(`[AuthContext] Updated Clerk metadata with role ${role}`);
+      } catch (error) {
+        console.error("[AuthContext] Error updating Clerk metadata:", error);
+        // Continue anyway to try updating Convex
+      }
 
       // Then update Convex if we have a Convex user
       if (convexUser) {
         const typedConvexUser = convexUser as unknown as ConvexUser;
-        await updateUserRole({
-          userId: typedConvexUser._id,
-          role: role
-        });
-        console.log(`[AuthContext] Updated Convex with role ${role}`);
+        
+        // Add retry logic for Convex operations
+        let retries = 0;
+        const maxRetries = 3;
+        let success = false;
+        
+        while (!success && retries < maxRetries) {
+          try {
+            await updateUserRole({
+              userId: typedConvexUser._id,
+              role: role
+            });
+            console.log(`[AuthContext] Updated Convex with role ${role}`);
+            success = true;
+          } catch (error) {
+            retries++;
+            console.error(`[AuthContext] Error updating Convex role (attempt ${retries}/${maxRetries}):`, error);
+            if (retries < maxRetries) {
+              // Wait before retrying (exponential backoff)
+              const waitTime = Math.pow(2, retries) * 500;
+              console.log(`[AuthContext] Retrying in ${waitTime}ms...`);
+              await new Promise(resolve => setTimeout(resolve, waitTime));
+            } else {
+              throw error;
+            }
+          }
+        }
+      } else {
+        // If we don't have a Convex user yet, create one
+        console.log(`[AuthContext] No Convex user found, creating new user with role ${role}`);
+        
+        // Add retry logic for user creation
+        let retries = 0;
+        const maxRetries = 3;
+        let success = false;
+        
+        while (!success && retries < maxRetries) {
+          try {
+            const result = await createUser({
+              clerkId: clerkUser.id,
+              email: clerkUser.primaryEmailAddress?.emailAddress || "",
+              fullName: `${clerkUser.firstName || ""} ${clerkUser.lastName || ""}`.trim(),
+              profileImage: clerkUser.imageUrl,
+              phoneNumber: clerkUser.phoneNumbers?.[0]?.phoneNumber,
+              role: role
+            });
+            console.log(`[AuthContext] Created new user in Convex with role ${role}:`, result);
+            success = true;
+          } catch (error) {
+            retries++;
+            console.error(`[AuthContext] Error creating user in Convex (attempt ${retries}/${maxRetries}):`, error);
+            if (retries < maxRetries) {
+              // Wait before retrying (exponential backoff)
+              const waitTime = Math.pow(2, retries) * 500;
+              console.log(`[AuthContext] Retrying in ${waitTime}ms...`);
+              await new Promise(resolve => setTimeout(resolve, waitTime));
+            } else {
+              console.error("[AuthContext] Failed to create user after multiple attempts");
+            }
+          }
+        }
       }
 
       // Update local state
       setUser(prev => prev ? { ...prev, role } : null);
+      console.log(`[AuthContext] Updated local state with role ${role}`);
     } catch (error) {
       console.error("[AuthContext] Error updating user role:", error);
       throw error;
@@ -214,9 +414,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const login = async (credentials?: { email: string; password: string }) => {
+    console.log("[AuthContext] Login function called", credentials ? "with credentials" : "without credentials");
     setIsLoading(true);
     // In a real app, you'd use these credentials to authenticate
     console.log("Login called with credentials:", credentials);
+    console.log("[AuthContext] Would use credentials here, but Clerk handles auth");
+    // Clerk handles the actual authentication
     setIsLoading(false);
   };
 

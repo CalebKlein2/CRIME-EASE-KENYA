@@ -223,22 +223,43 @@ export default function SignUpPage() {
                 }}
                 afterSignUp={async (user) => {
                   try {
+                    console.log(`[SignUp] Sign-up completed, setting role to ${selectedRole}`);
+                    
                     // First set the role in Clerk metadata
-                    const clerkUser = user as UserResource;
-                    await clerkUser.update({
+                    // @ts-ignore - Clerk type definitions don't properly expose publicMetadata
+                    await user.update({
                       publicMetadata: {
                         role: selectedRole
                       }
                     });
                     console.log(`[SignUp] Set initial role in Clerk metadata to ${selectedRole}`);
                     
-                    // Wait a moment for the webhook to process
-                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    // Wait for Clerk to process the metadata update
+                    console.log("[SignUp] Waiting for Clerk to process metadata update...");
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+                    
+                    // Force a session refresh to ensure the changes are applied
+                    const clerkClient = (window as any).Clerk;
+                    if (clerkClient && clerkClient.session) {
+                      try {
+                        await clerkClient.session.touch();
+                        console.log("[SignUp] Refreshed Clerk session");
+                      } catch (e) {
+                        console.error("[SignUp] Error refreshing session:", e);
+                      }
+                    }
+                    
+                    // Wait for the webhook to process and create the user in Convex
+                    console.log("[SignUp] Waiting for webhook to process...");
+                    await new Promise(resolve => setTimeout(resolve, 3000));
                     
                     // Force a page reload to ensure everything is synced
+                    console.log(`[SignUp] Redirecting to ${selectedRoleOption.redirectPath}`);
                     window.location.href = selectedRoleOption.redirectPath;
                   } catch (error) {
                     console.error('[SignUp] Error setting initial user role:', error);
+                    // Still try to redirect even if there was an error
+                    window.location.href = selectedRoleOption.redirectPath;
                   }
                 }}
               />

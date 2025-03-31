@@ -66,42 +66,43 @@ import {
 const navItems = [
   {
     label: "Dashboard",
-    href: "/citizen-dashboard",
-    icon: <Home className="h-5 w-5" />
+    href: "/citizen-dashboard/",
+    icon: <Home className="h-5 w-5" />,
+    active: true
   },
   {
     label: "My Reports",
-    href: "/citizen-dashboard/reports",
+    href: "/citizen-dashboard/reports/",
     icon: <FileText className="h-5 w-5" />
   },
   {
     label: "Find Station",
-    href: "/citizen-dashboard/find-station",
+    href: "/citizen-dashboard/find-station/",
     icon: <MapPin className="h-5 w-5" />
   },
   {
     label: "Notifications",
-    href: "/citizen-dashboard/notifications",
+    href: "/citizen-dashboard/notifications/",
     icon: <Bell className="h-5 w-5" />
   },
   {
     label: "Track Case",
-    href: "/citizen-dashboard/track",
+    href: "/citizen-dashboard/track/",
     icon: <FileSearch className="h-5 w-5" />
   },
   {
     label: "Contact Support",
-    href: "/citizen-dashboard/support",
+    href: "/citizen-dashboard/support/",
     icon: <MessageCircle className="h-5 w-5" />
   },
   {
     label: "Help & FAQs",
-    href: "/citizen-dashboard/help",
+    href: "/citizen-dashboard/help/",
     icon: <HelpCircle className="h-5 w-5" />
   },
   {
     label: "Profile Settings",
-    href: "/citizen-dashboard/settings",
+    href: "/citizen-dashboard/settings/",
     icon: <Settings className="h-5 w-5" />
   }
 ];
@@ -2064,7 +2065,7 @@ const DashboardHome = () => {
           </CardHeader>
           <CardContent>
             <Button variant="outline" asChild className="w-full">
-              <Link to="/citizen-dashboard/reports">
+              <Link to="/citizen-dashboard/reports/">
                 <CalendarCheck className="mr-2 h-4 w-4" /> View Reports
               </Link>
             </Button>
@@ -2078,7 +2079,7 @@ const DashboardHome = () => {
           </CardHeader>
           <CardContent>
             <Button variant="outline" asChild className="w-full">
-              <Link to="/citizen-dashboard/find-station">
+              <Link to="/citizen-dashboard/find-station/">
                 <MapPin className="mr-2 h-4 w-4" /> Find Stations
               </Link>
             </Button>
@@ -2092,7 +2093,7 @@ const DashboardHome = () => {
           </CardHeader>
           <CardContent>
             <Button variant="outline" asChild className="w-full">
-              <Link to="/citizen-dashboard/notifications">
+              <Link to="/citizen-dashboard/notifications/">
                 <Bell className="mr-2 h-4 w-4" /> Notifications
               </Link>
             </Button>
@@ -2177,27 +2178,98 @@ export default function CitizenDashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-
-  // Update active nav item based on current path
-  const getNavItemsWithActive = () => {
-    return navItems.map(item => ({
-      ...item,
-      active: location.pathname === item.href || 
-              (item.href !== "/citizen-dashboard" && location.pathname.startsWith(item.href))
-    }));
-  };
+  const [isLoading, setIsLoading] = useState(true);
   
+  // Add timeout to prevent infinite loading
+  useEffect(() => {
+    // Set a timeout to stop showing loading after 5 seconds
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+      console.log("[CitizenDashboard] Loading timeout reached, forcing dashboard to show");
+    }, 5000);
+    
+    // Clear the timeout if user loads successfully
+    if (user) {
+      clearTimeout(timer);
+      setIsLoading(false);
+      console.log("[CitizenDashboard] User loaded successfully:", user);
+    }
+    
+    return () => clearTimeout(timer);
+  }, [user]);
+
   // Redirect to main page if role doesn't match
   useEffect(() => {
     if (user && user.role !== "citizen") {
-      console.log("[CitizenDashboard] User role doesn't match, redirecting to home");
-      navigate("/", { replace: true });
+      console.log("[CitizenDashboard] User role doesn't match:", user.role);
+      
+      // Redirect to appropriate dashboard based on role
+      if (user.role === "national_admin") {
+        console.log("[CitizenDashboard] Redirecting to National dashboard");
+        navigate("/national-dashboard/", { replace: true });
+      } else if (user.role === "station_admin") {
+        console.log("[CitizenDashboard] Redirecting to Station Admin dashboard");
+        navigate("/station-dashboard/", { replace: true });
+      } else if (user.role === "officer") {
+        console.log("[CitizenDashboard] Redirecting to Officer dashboard");
+        navigate("/officer-dashboard/", { replace: true });
+      } else {
+        // Default fallback
+        console.log("[CitizenDashboard] Role unknown, redirecting to home");
+        navigate("/", { replace: true });
+      }
     }
   }, [user, navigate]);
 
-  if (!user) {
-    return <div>Loading...</div>;
+  if (!user && isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen p-4">
+        <div className="animate-spin mb-4">
+          <Loader2 size={48} className="text-blue-500" />
+        </div>
+        <p className="text-lg font-medium">Loading your dashboard...</p>
+        <p className="text-sm text-gray-500 mt-2">This may take a few moments</p>
+      </div>
+    );
   }
+
+  // If we're past the loading timeout and still no user, show a fallback UI
+  if (!user && !isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen p-4">
+        <div className="mb-4 text-amber-500">
+          <AlertCircle size={48} />
+        </div>
+        <h2 className="text-xl font-bold mb-2">Dashboard Access Issue</h2>
+        <p className="text-center mb-4">
+          We're having trouble loading your user information. This could be due to:
+        </p>
+        <ul className="list-disc pl-6 mb-6 text-gray-700">
+          <li>Your session may have expired</li>
+          <li>You may not have the correct permissions</li>
+          <li>There might be a temporary system issue</li>
+        </ul>
+        <div className="flex gap-4">
+          <Button onClick={() => navigate("/sign-in")}>
+            Sign In Again
+          </Button>
+          <Button variant="outline" onClick={() => window.location.reload()}>
+            Refresh Page
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Function to set the active nav item based on current path
+  const getNavItemsWithActive = () => {
+    const currentPath = location.pathname;
+    return navItems.map(item => ({
+      ...item,
+      active: currentPath.includes(item.href) || 
+              (item.href === "/citizen-dashboard/" && currentPath === "/citizen-dashboard")
+    }));
+  };
 
   return (
     <DashboardLayout
@@ -2291,4 +2363,4 @@ export default function CitizenDashboard() {
       </Routes>
     </DashboardLayout>
   );
-}   
+}
