@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { crimeReportService } from '@/lib/supabaseClient';
+import { crimeReportService, notificationService, caseTrackingService } from '@/lib/supabaseClient';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Link, useNavigate, Routes, Route, Navigate, useLocation } from 'react-router-dom';
@@ -1198,7 +1198,7 @@ const TrackCaseContent = () => {
             officer: report.assigned_officer_name || 'Not assigned yet',
             officerContact: report.assigned_officer_email || '',
             officerId: report.assigned_officer_id || '',
-            location: report.location || 'Not specified',
+            location: report.location && typeof report.location === 'object' ? report.location.address || 'Address not specified' : 'Location not specified',
             category: report.incident_type || 'General',
             lastUpdated: report.updated_at ? new Date(report.updated_at).toLocaleDateString() : 'Not updated yet',
             caseNumber: report.id.substring(0, 8),
