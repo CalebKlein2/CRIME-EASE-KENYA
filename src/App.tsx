@@ -7,6 +7,7 @@ import LandingPage from "./components/LandingPage";
 import Home from "./components/home";
 import AnonymousReport from "./components/AnonymousReport";
 import ReportCrimeForm from "./components/ReportCrimeForm";
+import StandaloneReportPage from "./components/StandaloneReportPage";
 import { PoliceStationFinder } from './components/maps/PoliceStationFinder';
 import { AuthRoutes } from "./routes/auth-routes";
 import { Toaster } from "./components/ui/toaster";
@@ -112,11 +113,7 @@ export default function App() {
           <Route
             path="/report"
             element={
-              <SignedIn>
-                <div className="container mx-auto py-8 flex justify-center">
-                  <ReportCrimeForm />
-                </div>
-              </SignedIn>
+              <StandaloneReportPage />
             }
           />
           

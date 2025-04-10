@@ -190,4 +190,22 @@ export default defineSchema({
     updated_at: v.number(),
     updated_by: v.id("users"),
   }).index("by_key", ["key"]),
+
+  crimeReports: defineTable({
+    description: v.string(),
+    location: v.object({
+      latitude: v.number(),
+      longitude: v.number(),
+      address: v.optional(v.string()),
+    }),
+    incidentType: v.string(), 
+    date: v.string(),
+    city: v.string(),
+    postalCode: v.string(),
+    name: v.string(),
+    contact: v.string(),
+    isAnonymous: v.boolean(),
+    userId: v.optional(v.string()),
+    createdAt: v.number(),
+  }),
 });

@@ -114,84 +114,80 @@ import CitizenNotificationsOriginal from '../notifications/page';
 import CitizenTrackOriginal from '../track/page';
 import CitizenSupportOriginal from '../support/page';
 import CitizenHelpOriginal from '../help/page';
+import CitizenReportPage from '../report/page';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 
 // Enhanced Reports Content
 const ReportsContent = () => {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
+  const [reports, setReports] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch reports from Supabase
+  useEffect(() => {
+    const fetchReports = async () => {
+      if (!user?.id) return;
+      
+      try {
+        setLoading(true);
+        const userReports = await crimeReportService.getUserReports(user.id);
+        
+        // Transform the data to match the UI format
+        const formattedReports = userReports.map(report => ({
+          id: report.id,
+          title: report.title || `${report.incident_type} Report`,
+          date: new Date(report.created_at).toLocaleDateString(),
+          status: report.status || 'pending',
+          statusText: getStatusText(report.status || 'pending'),
+          description: report.description,
+          officer: report.officer_name || 'Unassigned',
+          location: report.location?.address || `${report.city}`,
+          category: report.incident_type,
+          lastUpdated: report.updated_at ? new Date(report.updated_at).toLocaleDateString() : new Date(report.created_at).toLocaleDateString(),
+          caseNumber: `CRB-${report.id.substring(0, 5)}`,
+          attachments: report.media_files?.length || 0
+        }));
+        
+        setReports(formattedReports);
+        setError(null);
+      } catch (err) {
+        console.error('Error fetching reports:', err);
+        setError('Failed to load your reports. Please try again later.');
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchReports();
+  }, [user?.id]);
   
-  // Mock reports data
-  const reports = [
-    {
-      id: "12345",
-      title: "Theft Report",
-      date: "March 15, 2025",
-      status: "in-progress",
-      statusText: "In Progress",
-      description: "Theft of laptop from vehicle at Main Street parking lot between 2-4 PM.",
-      officer: "Officer Johnson",
-      location: "Main Street, Nairobi",
-      category: "Theft",
-      lastUpdated: "March 20, 2025",
-      caseNumber: "CRB-23456",
-      attachments: 2
-    },
-    {
-      id: "12346",
-      title: "Vandalism Report",
-      date: "March 10, 2025",
-      status: "resolved",
-      statusText: "Resolved",
-      description: "Graffiti on the community center wall on Park Avenue.",
-      officer: "Officer Williams",
-      location: "Park Avenue, Nairobi",
-      category: "Vandalism",
-      lastUpdated: "March 18, 2025",
-      caseNumber: "CRB-23457",
-      attachments: 1
-    },
-    {
-      id: "12347",
-      title: "Noise Complaint",
-      date: "March 8, 2025",
-      status: "pending",
-      statusText: "Pending Review",
-      description: "Continuous loud music from apartment 4B after 11 PM for the last week.",
-      officer: "Unassigned",
-      location: "River Road Apartments, Nairobi",
-      category: "Disturbance",
-      lastUpdated: "March 8, 2025",
-      caseNumber: "CRB-23458",
-      attachments: 0
-    },
-    {
-      id: "12348",
-      title: "Stolen Vehicle",
-      date: "March 5, 2025",
-      status: "investigating",
-      statusText: "Under Investigation",
-      description: "White Toyota Corolla, license plate KBN 456X, stolen from workplace parking lot.",
-      officer: "Officer Ngugi",
-      location: "Westlands Business Park, Nairobi",
-      category: "Theft",
-      lastUpdated: "March 16, 2025",
-      caseNumber: "CRB-23459",
-      attachments: 3
+  // Helper function to get status text
+  const getStatusText = (status: string): string => {
+    switch (status) {
+      case 'pending': return 'Pending Review';
+      case 'under_investigation': return 'Under Investigation';
+      case 'resolved': return 'Resolved';
+      case 'closed': return 'Closed';
+      case 'rejected': return 'Rejected';
+      default: return 'Pending Review';
     }
-  ];
+  };
 
   // Filter reports based on active tab
   const filteredReports = reports.filter(report => {
-    const matchesSearch = report.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                         report.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         report.caseNumber.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = 
+      report.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
+      report.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      report.caseNumber.toLowerCase().includes(searchTerm.toLowerCase());
     
     if (activeTab === "all") return matchesSearch;
     if (activeTab === "pending" && report.status === "pending") return matchesSearch;
-    if (activeTab === "active" && (report.status === "in-progress" || report.status === "investigating")) return matchesSearch;
-    if (activeTab === "resolved" && report.status === "resolved") return matchesSearch;
+    if (activeTab === "active" && (report.status === "under_investigation")) return matchesSearch;
+    if (activeTab === "resolved" && (report.status === "resolved" || report.status === "closed")) return matchesSearch;
     
     return false;
   });
@@ -788,73 +784,94 @@ const FindStationContent = () => {
 
 // Enhanced Notifications Content
 const NotificationsContent = () => {
-  const [filter, setFilter] = useState("all");
-  const [selectedNotification, setSelectedNotification] = useState(null);
-  
-  // Mock notifications data
-  const notifications = [
-    {
-      id: 1,
-      title: "Case Update: Theft Report #12345",
-      message: "Your case has been assigned to Officer Johnson. They will be in touch with you shortly for more information.",
-      time: "Today, 10:30 AM",
-      type: "case_update",
-      read: false,
-      caseId: "12345",
-      actionRequired: false
-    },
-    {
-      id: 2,
-      title: "Evidence Received: Theft Report #12345",
-      message: "We've received the photo evidence you submitted for your theft report. Thank you for providing this information.",
-      time: "Yesterday, 3:45 PM",
-      type: "evidence",
-      read: true,
-      caseId: "12345",
-      actionRequired: false
-    },
-    {
-      id: 3,
-      title: "Interview Request: Vandalism Report #12346",
-      message: "Officer Williams would like to schedule an interview regarding your vandalism report. Please respond at your earliest convenience.",
-      time: "March 20, 2025",
-      type: "interview",
-      read: false,
-      caseId: "12346",
-      actionRequired: true
-    },
-    {
-      id: 4,
-      title: "Case Status Changed: Theft Report #12345",
-      message: "Your case status has been updated from 'Pending Review' to 'Under Investigation'. Officer Johnson has begun investigating your case.",
-      time: "March 18, 2025",
-      type: "status_change",
-      read: true,
-      caseId: "12345",
-      actionRequired: false
-    },
-    {
-      id: 5,
-      title: "Crime Alert for Your Area",
-      message: "There have been reports of vehicle break-ins in your neighborhood. Please ensure all vehicles are locked and valuables are not left visible.",
-      time: "March 15, 2025",
-      type: "alert",
-      read: true,
-      caseId: null,
-      actionRequired: false
-    }
-  ];
+  const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState("all");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Filter notifications
-  const getFilteredNotifications = () => {
-    if (filter === "all") return notifications;
-    if (filter === "unread") return notifications.filter(n => !n.read);
-    if (filter === "action") return notifications.filter(n => n.actionRequired);
-    if (filter === "case_updates") return notifications.filter(n => n.type === "case_update" || n.type === "status_change");
-    return notifications;
+  // Fetch notifications from Supabase
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      if (!user?.id) return;
+      
+      try {
+        setLoading(true);
+        const userNotifications = await notificationService.getUserNotifications(user.id);
+        
+        // Transform the data to match the UI format
+        const formattedNotifications = userNotifications.map(notification => ({
+          id: notification.id,
+          title: notification.title,
+          message: notification.message,
+          date: new Date(notification.created_at).toLocaleDateString(),
+          isRead: notification.is_read,
+          type: notification.notification_type || 'general',
+          relatedCaseId: notification.related_case_id
+        }));
+        
+        setNotifications(formattedNotifications);
+        setError(null);
+      } catch (err) {
+        console.error('Error fetching notifications:', err);
+        setError('Failed to load your notifications. Please try again later.');
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchNotifications();
+  }, [user?.id]);
+
+  // Mark notification as read
+  const handleMarkAsRead = async (notificationId: string) => {
+    try {
+      await notificationService.markAsRead(notificationId);
+      
+      // Update local state
+      setNotifications(prevNotifications => 
+        prevNotifications.map(notification => 
+          notification.id === notificationId 
+            ? { ...notification, isRead: true } 
+            : notification
+        )
+      );
+    } catch (err) {
+      console.error('Error marking notification as read:', err);
+    }
+  };
+  
+  // Mark all notifications as read
+  const handleMarkAllAsRead = async () => {
+    if (!user?.id) return;
+    
+    try {
+      await notificationService.markAllAsRead(user.id);
+      
+      // Update local state
+      setNotifications(prevNotifications => 
+        prevNotifications.map(notification => ({ ...notification, isRead: true }))
+      );
+    } catch (err) {
+      console.error('Error marking all notifications as read:', err);
+    }
   };
 
-  const filteredNotifications = getFilteredNotifications();
+  // Filter notifications based on active tab
+  const filteredNotifications = notifications.filter(notification => {
+    const matchesSearch = 
+      notification.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
+      notification.message.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    if (activeTab === "all") return matchesSearch;
+    if (activeTab === "unread" && !notification.isRead) return matchesSearch;
+    if (activeTab === "case-updates" && notification.type === "case-update") return matchesSearch;
+    if (activeTab === "requests" && notification.type === "request") return matchesSearch;
+    if (activeTab === "alerts" && notification.type === "alert") return matchesSearch;
+    
+    return false;
+  });
   
   // Get icon based on notification type
   const getNotificationIcon = (type) => {
@@ -2041,6 +2058,115 @@ const SupportContent = () => {
 
 // Main dashboard content component
 const DashboardHome = () => {
+  const { user } = useAuth();
+  const [recentReports, setRecentReports] = useState<any[]>([]);
+  const [nearbyStations, setNearbyStations] = useState<any[]>([]);
+  const [loadingReports, setLoadingReports] = useState(true);
+  const [loadingStations, setLoadingStations] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch recent reports from Supabase
+  useEffect(() => {
+    const fetchRecentReports = async () => {
+      if (!user?.id) return;
+      
+      try {
+        setLoadingReports(true);
+        const reports = await crimeReportService.getRecentReports(user.id, 2);
+        
+        // Transform the data to match the UI format
+        const formattedReports = reports.map(report => ({
+          id: report.id,
+          title: report.title || `${report.incident_type} Report`,
+          date: new Date(report.created_at).toLocaleDateString(),
+          status: report.status || 'pending',
+          statusText: getStatusText(report.status || 'pending'),
+          description: report.description.substring(0, 100) + (report.description.length > 100 ? '...' : ''),
+          caseNumber: report.id.substring(0, 5)
+        }));
+        
+        setRecentReports(formattedReports);
+      } catch (err) {
+        console.error('Error fetching recent reports:', err);
+        setError('Failed to load your recent reports.');
+      } finally {
+        setLoadingReports(false);
+      }
+    };
+    
+    fetchRecentReports();
+  }, [user?.id]);
+
+  // Fetch nearby police stations
+  useEffect(() => {
+    const fetchNearbyStations = async () => {
+      try {
+        setLoadingStations(true);
+        
+        // Get user's location if available, otherwise use default location
+        let latitude = -1.2921; // Default to Nairobi
+        let longitude = 36.8219;
+        
+        // Try to get user's current location
+        if (navigator.geolocation) {
+          try {
+            const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+              navigator.geolocation.getCurrentPosition(resolve, reject, {
+                timeout: 5000,
+                maximumAge: 60000
+              });
+            });
+            
+            latitude = position.coords.latitude;
+            longitude = position.coords.longitude;
+          } catch (locationErr) {
+            console.warn('Could not get user location:', locationErr);
+            // Continue with default coordinates
+          }
+        }
+        
+        // Fetch nearby stations from Supabase
+        const stations = await policeStationService.getNearestStations(latitude, longitude, 2);
+        // Ensure each station has a distance property (default to 0 if not available)
+        const stationsWithDistance = stations.map(station => ({
+          ...station,
+          distance: station.distance || 0
+        }));
+        setNearbyStations(stationsWithDistance);
+      } catch (err) {
+        console.error('Error fetching nearby stations:', err);
+      } finally {
+        setLoadingStations(false);
+      }
+    };
+    
+    fetchNearbyStations();
+  }, []);
+  
+  // Helper function to get status text
+  const getStatusText = (status: string): string => {
+    switch (status) {
+      case 'pending': return 'Pending Review';
+      case 'under_investigation': return 'Under Investigation';
+      case 'resolved': return 'Resolved';
+      case 'closed': return 'Closed';
+      case 'rejected': return 'Rejected';
+      default: return 'Pending Review';
+    }
+  };
+  
+  // Helper function to get status color
+  const getStatusColor = (status: string): string => {
+    switch (status) {
+      case 'pending': return 'bg-blue-100 text-blue-800';
+      case 'under_investigation': return 'bg-yellow-100 text-yellow-800';
+      case 'resolved': return 'bg-green-100 text-green-800';
+      case 'closed': return 'bg-gray-100 text-gray-800';
+      case 'rejected': return 'bg-red-100 text-red-800';
+      default: return 'bg-blue-100 text-blue-800';
+    }
+  };
+
   return (
     <div className="space-y-8 p-6">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -2051,7 +2177,7 @@ const DashboardHome = () => {
           </CardHeader>
           <CardContent>
             <Button asChild className="w-full">
-              <Link to="/report">
+              <Link to="/citizen-dashboard/report/">
                 <FileText className="mr-2 h-4 w-4" /> New Report
               </Link>
             </Button>
@@ -2108,29 +2234,45 @@ const DashboardHome = () => {
             <CardDescription>Your recent crime reports and their status</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              <div className="border rounded-lg p-4">
-                <div className="flex justify-between">
-                  <div>
-                    <h3 className="font-medium">Theft Report #12345</h3>
-                    <p className="text-sm text-gray-500">Submitted on March 15, 2025</p>
-                  </div>
-                  <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded text-xs">In Progress</span>
-                </div>
-                <p className="mt-2 text-sm">Theft of laptop from vehicle at Main Street parking lot.</p>
+            {loadingReports ? (
+              <div className="flex justify-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
               </div>
-
-              <div className="border rounded-lg p-4">
-                <div className="flex justify-between">
-                  <div>
-                    <h3 className="font-medium">Vandalism Report #12346</h3>
-                    <p className="text-sm text-gray-500">Submitted on March 10, 2025</p>
+            ) : recentReports.length > 0 ? (
+              <div className="space-y-4">
+                {recentReports.map(report => (
+                  <div key={report.id} className="border rounded-lg p-4">
+                    <div className="flex justify-between">
+                      <div>
+                        <h3 className="font-medium">{report.title} #{report.caseNumber}</h3>
+                        <p className="text-sm text-gray-500">Submitted on {report.date}</p>
+                      </div>
+                      <span className={`px-2 py-1 rounded text-xs ${getStatusColor(report.status)}`}>
+                        {report.statusText}
+                      </span>
+                    </div>
+                    <p className="mt-2 text-sm">{report.description}</p>
                   </div>
-                  <span className="px-2 py-1 bg-green-100 text-green-800 rounded text-xs">Resolved</span>
+                ))}
+                
+                <div className="pt-2">
+                  <Button variant="ghost" size="sm" asChild className="text-sm">
+                    <Link to="/citizen-dashboard/reports/">
+                      View all reports <ChevronRight className="ml-1 h-4 w-4" />
+                    </Link>
+                  </Button>
                 </div>
-                <p className="mt-2 text-sm">Graffiti on the community center wall.</p>
               </div>
-            </div>
+            ) : (
+              <div className="text-center py-8">
+                <p className="text-gray-500">You haven't submitted any reports yet.</p>
+                <Button variant="outline" className="mt-4" asChild>
+                  <Link to="/citizen-dashboard/report/">
+                    <FileText className="mr-2 h-4 w-4" /> Create your first report
+                  </Link>
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -2140,33 +2282,56 @@ const DashboardHome = () => {
             <CardDescription>Police stations in your area</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              <div className="border rounded-lg p-3">
-                <h3 className="font-medium">Central Police Station</h3>
-                <p className="text-sm text-gray-500">2.3 km away</p>
-                <div className="mt-2 flex">
-                  <Button size="sm" variant="outline" className="text-xs">
-                    <MapPin className="mr-1 h-3 w-3" /> Directions
-                  </Button>
-                  <Button size="sm" variant="outline" className="ml-2 text-xs">
-                    <Bell className="mr-1 h-3 w-3" /> Contact
+            {loadingStations ? (
+              <div className="flex justify-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+              </div>
+            ) : nearbyStations.length > 0 ? (
+              <div className="space-y-4">
+                {nearbyStations.map(station => (
+                  <div key={station.id} className="border rounded-lg p-3">
+                    <h3 className="font-medium">{station.name}</h3>
+                    <p className="text-sm text-gray-500">{station.distance.toFixed(2)} km away</p>
+                    <div className="mt-2 flex">
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="text-xs"
+                        onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${station.location.latitude},${station.location.longitude}`, '_blank')}
+                      >
+                        <MapPin className="mr-1 h-3 w-3" /> Directions
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="ml-2 text-xs"
+                        onClick={() => window.open(`tel:${station.phone_number || ''}`, '_blank')}
+                        disabled={!station.phone_number}
+                      >
+                        <Phone className="mr-1 h-3 w-3" /> Contact
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+                
+                <div className="pt-2">
+                  <Button variant="ghost" size="sm" asChild className="text-sm">
+                    <Link to="/citizen-dashboard/find-station/">
+                      Find more stations <ChevronRight className="ml-1 h-4 w-4" />
+                    </Link>
                   </Button>
                 </div>
               </div>
-
-              <div className="border rounded-lg p-3">
-                <h3 className="font-medium">Westlands Police Post</h3>
-                <p className="text-sm text-gray-500">4.7 km away</p>
-                <div className="mt-2 flex">
-                  <Button size="sm" variant="outline" className="text-xs">
-                    <MapPin className="mr-1 h-3 w-3" /> Directions
-                  </Button>
-                  <Button size="sm" variant="outline" className="ml-2 text-xs">
-                    <Bell className="mr-1 h-3 w-3" /> Contact
-                  </Button>
-                </div>
+            ) : (
+              <div className="text-center py-8">
+                <p className="text-gray-500">No nearby stations found.</p>
+                <Button variant="outline" className="mt-4" asChild>
+                  <Link to="/citizen-dashboard/find-station/">
+                    <MapPin className="mr-2 h-4 w-4" /> Find stations
+                  </Link>
+                </Button>
               </div>
-            </div>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -2276,11 +2441,13 @@ export default function CitizenDashboard() {
       title="Citizen Dashboard"
       subtitle={`Welcome, ${user.full_name || "Citizen"}`}
       navItems={getNavItemsWithActive()}
-      role="citizen"
+      userName={user.full_name || "Citizen"}
+      userRole="Citizen"
       notifications={3}
     >
       <Routes>
         <Route index element={<DashboardHome />} />
+        <Route path="report/*" element={<CitizenReportPage />} />
         <Route path="reports/*" element={
           <div className="p-6">
             <h2 className="text-2xl font-bold mb-6">My Reports</h2>
@@ -2363,4 +2530,6 @@ export default function CitizenDashboard() {
       </Routes>
     </DashboardLayout>
   );
-}
+};
+
+export default CitizenDashboard;

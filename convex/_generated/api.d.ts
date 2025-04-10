@@ -16,6 +16,7 @@ import type {
 import type * as admin from "../admin.js";
 import type * as auth from "../auth.js";
 import type * as cases from "../cases.js";
+import type * as crimeReports_createCrimeReport from "../crimeReports/createCrimeReport.js";
 import type * as evidence from "../evidence.js";
 import type * as http from "../http.js";
 import type * as interviews from "../interviews.js";
@@ -34,6 +35,7 @@ declare const fullApi: ApiFromModules<{
   admin: typeof admin;
   auth: typeof auth;
   cases: typeof cases;
+  "crimeReports/createCrimeReport": typeof crimeReports_createCrimeReport;
   evidence: typeof evidence;
   http: typeof http;
   interviews: typeof interviews;

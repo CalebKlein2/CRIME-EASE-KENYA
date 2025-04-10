@@ -25,6 +25,8 @@ const ReportCrimeForm = ({
   initialStep = 1,
   isAnonymousDefault = false,
 }: ReportCrimeFormProps) => {
+  // Add loading state
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [currentStep, setCurrentStep] = React.useState(initialStep);
   const [isAnonymous, setIsAnonymous] = React.useState(isAnonymousDefault);
   const [location, setLocation] = React.useState<Location | null>(null);
@@ -67,17 +69,52 @@ const ReportCrimeForm = ({
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit({
-      ...formData,
-      isAnonymous,
-      location: location ? {
+    setIsSubmitting(true);
+    
+    try {
+      // Make sure we have a location object even if it's empty
+      const locationData = location ? {
         latitude: location.latitude,
         longitude: location.longitude,
-        address: location.address
-      } : null
-    });
+        address: location.address || ""
+      } : { 
+        latitude: 0, 
+        longitude: 0, 
+        address: "" 
+      };
+      
+      // Prepare the formatted data for submission
+      const dataToSubmit = {
+        ...formData,
+        isAnonymous,
+        location: locationData
+      };
+      
+      console.log("Submitting properly formatted data:", dataToSubmit);
+      
+      // Call the parent's onSubmit handler with the form data
+      await onSubmit(dataToSubmit);
+      
+      // Reset the form after successful submission
+      setFormData({
+        incidentType: "",
+        description: "",
+        date: "",
+        address: "",
+        city: "",
+        postalCode: "",
+        name: "",
+        contact: ""
+      });
+      setLocation(null);
+      setCurrentStep(1);
+    } catch (error) {
+      console.error("Error submitting form:", error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -200,76 +237,53 @@ const ReportCrimeForm = ({
           )}
 
           {currentStep === 3 && (
-            <div className="space-y-6">
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6">
-                <div className="text-center">
-                  <Upload className="w-8 h-8 mx-auto mb-2 text-gray-400" />
-                  <p className="text-sm text-gray-600 mb-2">
-                    Drag and drop files here or click to upload
-                  </p>
-                  <Button variant="outline" size="sm">
-                    Choose Files
-                  </Button>
-                </div>
-              </div>
-
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="anonymous"
-                  checked={isAnonymous}
-                  onCheckedChange={setIsAnonymous}
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="name">Your Name (Optional)</Label>
+                <Input
+                  id="name"
+                  placeholder="Your Name"
+                  className="mt-1"
+                  value={formData.name}
+                  onChange={handleInputChange}
                 />
-                <Label htmlFor="anonymous">Submit report anonymously</Label>
               </div>
-
-              {!isAnonymous && (
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="name">Your Name</Label>
-                    <Input 
-                      id="name" 
-                      className="mt-1"
-                      value={formData.name}
-                      onChange={handleInputChange}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="contact">Contact Information</Label>
-                    <Input
-                      id="contact"
-                      type="email"
-                      placeholder="Email address"
-                      className="mt-1"
-                      value={formData.contact}
-                      onChange={handleInputChange}
-                    />
-                  </div>
-                </div>
-              )}
+              <div>
+                <Label htmlFor="contact">Contact Information (Optional)</Label>
+                <Input
+                  id="contact"
+                  placeholder="Email or Phone Number"
+                  className="mt-1"
+                  value={formData.contact}
+                  onChange={handleInputChange}
+                />
+              </div>
+              <div className="flex items-center space-x-2">
+                <Switch id="isAnonymous" checked={isAnonymous} onCheckedChange={setIsAnonymous} />
+                <Label htmlFor="isAnonymous">Report Anonymously</Label>
+              </div>
             </div>
           )}
         </div>
       </form>
 
-      <div className="p-6 border-t flex justify-between mt-auto">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={handleBack}
-          disabled={currentStep === 1}
-        >
+      <div className="flex justify-between p-6 flex-shrink-0">
+        <Button variant="secondary" onClick={handleBack} disabled={currentStep === 1}>
           <ChevronLeft className="w-4 h-4 mr-2" />
           Back
         </Button>
-
         {currentStep < 3 ? (
-          <Button type="button" onClick={handleNext}>
+          <Button onClick={handleNext}>
             Next
             <ChevronRight className="w-4 h-4 ml-2" />
           </Button>
         ) : (
-          <Button type="submit" className="bg-green-600 hover:bg-green-700">
-            Submit Report
+          <Button 
+            onClick={handleSubmit} 
+            disabled={isSubmitting}
+            className={isSubmitting ? "opacity-70 cursor-not-allowed" : ""}
+          >
+            {isSubmitting ? "Submitting..." : "Submit"}
           </Button>
         )}
       </div>

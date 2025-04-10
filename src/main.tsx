@@ -8,7 +8,9 @@ import { ConvexProvider, ConvexReactClient } from "convex/react";
 
 const basename = import.meta.env.BASE_URL;
 const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
-const CONVEX_URL = import.meta.env.VITE_CONVEX_URL || "https://valuable-mink-760.convex.cloud";
+const CONVEX_URL = import.meta.env.VITE_CONVEX_URL || "https://notable-alpaca-532.convex.cloud";
+
+console.log("Using Convex URL:", CONVEX_URL);
 
 if (!PUBLISHABLE_KEY) {
   throw new Error("Missing Clerk Publishable Key");
@@ -21,7 +23,6 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <ClerkProvider 
       publishableKey={PUBLISHABLE_KEY}
-      navigate={(to) => window.location.href = to}
       signInUrl="/sign-in"
       signUpUrl="/sign-up"
       afterSignInUrl="/dashboard"
