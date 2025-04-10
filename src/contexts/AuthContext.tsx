@@ -36,6 +36,15 @@ interface User {
   badge_number?: string;
   station_code?: string;
   security_code?: string;
+  profile?: {
+    full_name?: string;
+    avatar_url?: string;
+  };
+  station?: {
+    name?: string;
+    id?: string;
+    code?: string;
+  };
 }
 
 interface AuthContextType {
