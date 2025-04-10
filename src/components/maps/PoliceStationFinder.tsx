@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { mockPoliceStations } from '../../lib/supabase';
+import { policeStationService, PoliceStation } from '../../lib/supabaseClient';
 import { Loader2 } from 'lucide-react';
 import { useUser } from "@clerk/clerk-react";
 
@@ -14,15 +14,8 @@ interface Location {
   longitude: number;
 }
 
-interface PoliceStation {
-  id: string;
-  name: string;
-  location: string;
-  latitude: number;
-  longitude: number;
-  distance?: number;
-  contact: string;
-}
+// Use the PoliceStation interface directly from supabaseClient.ts
+// We'll ensure the distance property is set before using it
 
 export const PoliceStationFinder: React.FC = () => {
   const { user } = useUser();
@@ -132,38 +125,25 @@ export const PoliceStationFinder: React.FC = () => {
       mapRef.current?.setCenter({ lat: latitude, lng: longitude });
       mapRef.current?.setZoom(13);
 
-      // Get stations from mock data (will be replaced with Supabase in production)
-      const stations = await mockPoliceStations();
+      // Get stations from Supabase
+      const stations = await policeStationService.getNearestStations(latitude, longitude, 5);
       
-      // Calculate distances and sort
-      const stationsWithDistance = stations.map(station => ({
-        ...station,
-        distance: calculateDistance(
-          latitude,
-          longitude,
-          station.latitude,
-          station.longitude
-        )
-      })).sort((a, b) => (a.distance || 0) - (b.distance || 0))
-        .slice(0, 3);
+      // Stations already have distances calculated and are sorted
+      const stationsWithDistance = stations.slice(0, 3);
 
       // Add station markers
       stationsWithDistance.forEach((station, index) => {
         const marker = new google.maps.Marker({
-          position: { lat: station.latitude, lng: station.longitude },
+          position: { 
+            lat: station.location.latitude, 
+            lng: station.location.longitude 
+          },
           map: mapRef.current,
           title: station.name,
           label: {
-            text: (index + 1).toString(),
-            color: 'white'
-          },
-          icon: {
-            path: google.maps.SymbolPath.CIRCLE,
-            scale: 12,
-            fillColor: '#DB4437',
-            fillOpacity: 1,
-            strokeColor: '#ffffff',
-            strokeWeight: 2,
+            text: `${index + 1}`,
+            color: 'white',
+            fontWeight: 'bold'
           }
         });
 
@@ -172,9 +152,9 @@ export const PoliceStationFinder: React.FC = () => {
             <div class="p-4">
               <h3 class="font-semibold text-lg mb-2">${station.name}</h3>
               <div class="space-y-1">
-                <p class="text-sm"><strong>Distance:</strong> ${station.distance?.toFixed(2)} km</p>
-                <p class="text-sm"><strong>Location:</strong> ${station.location}</p>
-                <p class="text-sm"><strong>Contact:</strong> ${station.contact}</p>
+                <p class="text-sm"><strong>Distance:</strong> ${station.distance !== undefined ? station.distance.toFixed(2) : 'N/A'} km</p>
+                <p class="text-sm"><strong>Address:</strong> ${station.address}</p>
+                <p class="text-sm"><strong>Contact:</strong> ${station.phone_number || 'No contact information'}</p>
               </div>
             </div>
           `
@@ -196,17 +176,6 @@ export const PoliceStationFinder: React.FC = () => {
       setLoading(false);
       console.error('Error in findNearestStations:', error);
     }
-  };
-
-  const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
-    const R = 6371; // Earth's radius in km
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLon = (lon2 - lon1) * Math.PI / 180;
-    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
-              Math.sin(dLon/2) * Math.sin(dLon/2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-    return R * c;
   };
 
   return (
@@ -247,7 +216,10 @@ export const PoliceStationFinder: React.FC = () => {
                     key={station.id} 
                     className="flex justify-between items-center p-3 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 cursor-pointer transition-colors"
                     onClick={() => {
-                      mapRef.current?.setCenter({ lat: station.latitude, lng: station.longitude });
+                      mapRef.current?.setCenter({ 
+                        lat: station.location.latitude, 
+                        lng: station.location.longitude 
+                      });
                       mapRef.current?.setZoom(15);
                     }}
                   >
@@ -257,12 +229,12 @@ export const PoliceStationFinder: React.FC = () => {
                       </span>
                       <div className="flex flex-col">
                         <span className="font-medium">{station.name}</span>
-                        <span className="text-sm text-gray-500 dark:text-gray-400">{station.location}</span>
+                        <span className="text-sm text-gray-500 dark:text-gray-400">{station.address}</span>
                       </div>
                     </div>
                     <div className="flex flex-col items-end">
                       <span className="text-sm font-medium">{station.distance?.toFixed(2)} km</span>
-                      <span className="text-xs text-gray-500 dark:text-gray-400">{station.contact}</span>
+                      <span className="text-xs text-gray-500 dark:text-gray-400">{station.phone_number || 'No contact'}</span>
                     </div>
                   </div>
                 ))}

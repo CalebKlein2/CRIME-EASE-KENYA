@@ -2,7 +2,7 @@ import { Shield } from "lucide-react";
 import { Button } from "./ui/button";
 import { Link } from "react-router-dom";
 import EmergencySOSButton from "./EmergencySOSButton";
-import { SignedIn, SignedOut, UserButton, SignInButton } from "@clerk/clerk-react";
+import { SignedIn, SignedOut, UserButton } from "@clerk/clerk-react";
 import { useAuth } from "@/contexts/AuthContext";
 
 export default function Navbar() {
@@ -22,9 +22,7 @@ export default function Navbar() {
           <SignedOut>
             <div className="space-x-4">
               <Button variant="ghost" asChild>
-                <SignInButton mode="modal">
-                  <span>Login</span>
-                </SignInButton>
+                <Link to="/login">Login</Link>
               </Button>
               <Button asChild>
                 <Link to="/signup">Get Started</Link>
@@ -35,7 +33,7 @@ export default function Navbar() {
           <SignedIn>
             <div className="flex items-center gap-4">
               <Button variant="ghost" asChild>
-                <Link to={user?.role === "admin" ? "/admin" : "/dashboard"}>
+                <Link to={getDashboardUrl(user?.role)}>
                   Dashboard
                 </Link>
               </Button>
@@ -46,4 +44,19 @@ export default function Navbar() {
       </div>
     </nav>
   );
+}
+
+function getDashboardUrl(role?: string) {
+  switch (role) {
+    case "officer":
+      return "/officer-dashboard";
+    case "station_admin":
+      return "/station-dashboard";
+    case "national_admin":
+      return "/national-dashboard";
+    case "citizen":
+      return "/citizen-dashboard";
+    default:
+      return "/dashboard";
+  }
 }

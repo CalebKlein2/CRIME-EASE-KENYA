@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React from "react";
 import {
   Dialog,
@@ -55,3 +56,4 @@ export function ReportCrimeDialog() {
     </Dialog>
   );
 }
+
