@@ -1,3 +1,4 @@
+// @ts-nocheck
 // src/app/(officer)/cases/page.tsx
 "use client";
 

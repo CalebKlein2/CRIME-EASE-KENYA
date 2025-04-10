@@ -25,11 +25,14 @@ interface DashboardLayoutProps {
     icon: React.ReactNode;
     active?: boolean;
   }[];
-  userName: string;
-  userRole: string;
+  userName?: string;
+  userRole?: string;
+  role?: string; // Added for backward compatibility
   userProfileImageUrl?: string;
   userAvatarFallback?: string;
   notifications?: number;
+  stationCode?: string; // Added for station admin dashboard
+  badgeNumber?: string; // Added for officer dashboard
 }
 
 export function DashboardLayout({
@@ -39,10 +42,15 @@ export function DashboardLayout({
   navItems,
   userName,
   userRole,
+  role, // Added for backward compatibility
   userProfileImageUrl,
   userAvatarFallback = "U",
-  notifications = 0
+  notifications = 0,
+  stationCode,
+  badgeNumber
 }: DashboardLayoutProps) {
+  // Use role prop if userRole is not provided
+  const effectiveUserRole = userRole || role || "user";
   const { logout } = useAuth();
   const { isLoaded: clerkLoaded } = useUser();
   const [sidebarOpen, setSidebarOpen] = React.useState(false);

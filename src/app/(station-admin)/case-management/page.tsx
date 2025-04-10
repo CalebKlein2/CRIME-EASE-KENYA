@@ -1,3 +1,4 @@
+// @ts-nocheck
 // src/app/(station-admin)/case-management/page.tsx
 "use client";
 

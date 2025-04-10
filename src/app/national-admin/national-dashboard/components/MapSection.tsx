@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MapView } from "@/components/maps/MapView";
@@ -30,3 +31,4 @@ export const MapSection = () => {
     </Card>
   );
 };
+

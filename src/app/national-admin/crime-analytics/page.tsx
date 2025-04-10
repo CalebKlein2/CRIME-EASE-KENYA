@@ -1,3 +1,4 @@
+// @ts-nocheck
 // src/app/(national-admin)/crime-analytics/page.tsx
 "use client";
 

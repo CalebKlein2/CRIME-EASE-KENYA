@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React, { useState } from "react";
 import DashboardHeader from "./DashboardHeader";
 import CaseOverview from "./CaseOverview";

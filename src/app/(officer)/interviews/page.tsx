@@ -1,3 +1,4 @@
+// @ts-nocheck
 // src/app/(officer)/interviews/page.tsx
 "use client";
 

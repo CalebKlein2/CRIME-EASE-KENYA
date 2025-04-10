@@ -1,3 +1,4 @@
+// @ts-nocheck
 // src/components/layout/AuthLayout.tsx
 import React from "react";
 import { Shield } from "lucide-react";

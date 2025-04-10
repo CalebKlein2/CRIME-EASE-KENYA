@@ -12,7 +12,8 @@ interface StatsCardProps {
   trend?: {
     value: number;
     isPositive: boolean;
-  };
+  } | string; // Allow string for backward compatibility
+  trendDirection?: 'up' | 'down'; // For backward compatibility
   variant?: "default" | "success" | "warning" | "danger";
 }
 
@@ -36,8 +37,16 @@ export function StatsCard({
   icon,
   description,
   trend,
+  trendDirection,
   variant = "default",
 }: StatsCardProps) {
+  // Process trend data to handle both string and object formats
+  const trendData = typeof trend === 'string' 
+    ? { 
+        value: parseFloat(trend.replace('%', '').replace('+', '')), 
+        isPositive: trend.startsWith('+') || trendDirection === 'up'
+      } 
+    : trend;
   return (
     <Card>
       <CardContent className="p-6">
@@ -48,15 +57,15 @@ export function StatsCard({
             {description && (
               <p className="text-sm text-gray-500 mt-1">{description}</p>
             )}
-            {trend && (
+            {trendData && (
               <div className="flex items-center mt-2">
                 <span
                   className={`text-xs font-medium ${
-                    trend.isPositive ? "text-green-600" : "text-red-600"
+                    trendData.isPositive ? "text-green-600" : "text-red-600"
                   }`}
                 >
-                  {trend.isPositive ? "+" : "-"}
-                  {Math.abs(trend.value)}%
+                  {trendData.isPositive ? "+" : "-"}
+                  {Math.abs(trendData.value)}%
                 </span>
                 <span className="text-xs text-gray-500 ml-1">from last period</span>
               </div>

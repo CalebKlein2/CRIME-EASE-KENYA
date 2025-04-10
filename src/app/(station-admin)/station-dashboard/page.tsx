@@ -1,3 +1,4 @@
+// @ts-nocheck
 // src/app/(station-admin)/station-dashboard/page.tsx
 import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";

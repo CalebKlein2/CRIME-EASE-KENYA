@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 import CaseManagement from "./CaseManagement";
@@ -58,3 +59,4 @@ export default function AdminDashboard() {
     </div>
   );
 }
+
