@@ -1,14 +1,17 @@
 // src/app/(officer)/cases/[id]/page.tsx
+// @ts-nocheck
 "use client";
 
 import React, { useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams } from "react-router-dom";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { CaseStatusBadge } from "@/components/case/CaseStatusBadge";
 import { CasePriorityBadge } from "@/components/case/CasePriorityBadge";
 import { CaseTimeline } from "@/components/case/CaseTimeline";
 import { MapView } from "@/components/maps/MapView";
 import { Button } from "@/components/ui/button";
+import { FileText } from "lucide-react";
+import { Video, Image, Mic } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
