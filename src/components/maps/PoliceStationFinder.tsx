@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { policeStationService, PoliceStation as SupabasePoliceStation } from '../../lib/supabaseClient';
+import { policeStationService, PoliceStation } from '../../lib/supabaseClient';
 import { Loader2 } from 'lucide-react';
 import { useUser } from "@clerk/clerk-react";
 
@@ -14,10 +14,8 @@ interface Location {
   longitude: number;
 }
 
-// Extend the SupabasePoliceStation interface to include distance property
-interface PoliceStation extends SupabasePoliceStation {
-  distance?: number;
-}
+// Use the PoliceStation interface directly from supabaseClient.ts
+// We'll ensure the distance property is set before using it
 
 export const PoliceStationFinder: React.FC = () => {
   const { user } = useUser();
@@ -154,7 +152,7 @@ export const PoliceStationFinder: React.FC = () => {
             <div class="p-4">
               <h3 class="font-semibold text-lg mb-2">${station.name}</h3>
               <div class="space-y-1">
-                <p class="text-sm"><strong>Distance:</strong> ${station.distance?.toFixed(2)} km</p>
+                <p class="text-sm"><strong>Distance:</strong> ${station.distance !== undefined ? station.distance.toFixed(2) : 'N/A'} km</p>
                 <p class="text-sm"><strong>Address:</strong> ${station.address}</p>
                 <p class="text-sm"><strong>Contact:</strong> ${station.phone_number || 'No contact information'}</p>
               </div>

@@ -61,7 +61,8 @@ export interface CrimeReportRecord {
   name: string;
   contact: string;
   is_anonymous: boolean;
-  user_id?: string;
+  user_id?: string | null;
+  clerk_user_id?: string | null;
   status?: 'pending' | 'under_investigation' | 'resolved' | 'closed' | 'rejected';
   assigned_officer_id?: string;
   assigned_station_id?: string;
@@ -75,6 +76,11 @@ export interface CrimeReportRecord {
 
 // Transform form data to match Supabase column naming convention
 function transformFormData(data: CrimeReportFormData): Tables['crime_reports']['Insert'] {
+  // Create a user reference string that's compatible with Supabase
+  // Clerk user IDs are in the format 'user_xyz' which isn't a valid UUID
+  // We'll store the user ID as a string in a separate column
+  const userReference = data.userId ? data.userId.toString() : null;
+  
   return {
     description: data.description,
     location: {
@@ -89,7 +95,10 @@ function transformFormData(data: CrimeReportFormData): Tables['crime_reports']['
     name: data.name,
     contact: data.contact,
     is_anonymous: data.isAnonymous,
-    user_id: data.userId,
+    // Set user_id to null to avoid UUID validation errors
+    user_id: null,
+    // Store the actual Clerk user ID in a separate field
+    clerk_user_id: userReference,
     media_files: data.mediaFiles
   };
 }
@@ -112,6 +121,7 @@ export interface PoliceStation {
   station_head?: string;
   created_at?: string;
   updated_at?: string;
+  distance?: number; // Add distance property for sorting by proximity
 }
 
 // Police station service
@@ -239,7 +249,7 @@ export const notificationService = {
       const { data, error } = await supabase
         .from('notifications')
         .select('*')
-        .eq('user_id', userId)
+        .eq('clerk_user_id', userId)
         .order('created_at', { ascending: false });
       
       if (error) {
@@ -280,7 +290,7 @@ export const notificationService = {
       const { error } = await supabase
         .from('notifications')
         .update({ is_read: true })
-        .eq('user_id', userId)
+        .eq('clerk_user_id', userId)
         .eq('is_read', false);
       
       if (error) {
@@ -397,7 +407,7 @@ export const crimeReportService = {
       const result = await supabase
         .from('crime_reports')
         .select('*')
-        .eq('user_id', userId)
+        .eq('clerk_user_id', userId)
         .order('created_at', { ascending: false });
       
       if (result.error) {
@@ -482,7 +492,7 @@ export const crimeReportService = {
           *,
           police_stations!crime_reports_assigned_station_id_fkey(name)
         `)
-        .eq('user_id', userId)
+        .eq('clerk_user_id', userId)
         .order('created_at', { ascending: false });
       
       if (error) {
@@ -521,7 +531,7 @@ export const crimeReportService = {
           *,
           police_stations!crime_reports_assigned_station_id_fkey(name)
         `)
-        .eq('user_id', userId)
+        .eq('clerk_user_id', userId)
         .order('created_at', { ascending: false })
         .limit(limit);
       

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { crimeReportService } from '@/lib/supabaseClient';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Link, useNavigate, Routes, Route, Navigate, useLocation } from 'react-router-dom';
@@ -788,6 +789,7 @@ const NotificationsContent = () => {
   const [activeTab, setActiveTab] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [notifications, setNotifications] = useState<any[]>([]);
+  const [selectedNotification, setSelectedNotification] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -865,10 +867,9 @@ const NotificationsContent = () => {
       notification.message.toLowerCase().includes(searchTerm.toLowerCase());
     
     if (activeTab === "all") return matchesSearch;
-    if (activeTab === "unread" && !notification.isRead) return matchesSearch;
-    if (activeTab === "case-updates" && notification.type === "case-update") return matchesSearch;
-    if (activeTab === "requests" && notification.type === "request") return matchesSearch;
-    if (activeTab === "alerts" && notification.type === "alert") return matchesSearch;
+    if (activeTab === "unread" && !notification.read) return matchesSearch;
+    if (activeTab === "action" && notification.actionRequired) return matchesSearch;
+    if (activeTab === "case_updates" && (notification.type === "case_update" || notification.type === "status_change")) return matchesSearch;
     
     return false;
   });
@@ -895,6 +896,8 @@ const NotificationsContent = () => {
     setSelectedNotification(notification);
   };
 
+  // We'll use the existing filteredNotifications definition below
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -903,29 +906,29 @@ const NotificationsContent = () => {
           <div className="flex flex-wrap gap-2">
             <Button 
               size="sm" 
-              variant={filter === "all" ? "default" : "outline"}
-              onClick={() => setFilter("all")}
+              variant={activeTab === "all" ? "default" : "outline"}
+              onClick={() => setActiveTab("all")}
             >
               All ({notifications.length})
             </Button>
             <Button 
               size="sm" 
-              variant={filter === "unread" ? "default" : "outline"}
-              onClick={() => setFilter("unread")}
+              variant={activeTab === "unread" ? "default" : "outline"}
+              onClick={() => setActiveTab("unread")}
             >
               Unread ({notifications.filter(n => !n.read).length})
             </Button>
             <Button 
               size="sm" 
-              variant={filter === "action" ? "default" : "outline"}
-              onClick={() => setFilter("action")}
+              variant={activeTab === "action" ? "default" : "outline"}
+              onClick={() => setActiveTab("action")}
             >
               Action Required ({notifications.filter(n => n.actionRequired).length})
             </Button>
             <Button 
               size="sm" 
-              variant={filter === "case_updates" ? "default" : "outline"}
-              onClick={() => setFilter("case_updates")}
+              variant={activeTab === "case_updates" ? "default" : "outline"}
+              onClick={() => setActiveTab("case_updates")}
             >
               Case Updates ({notifications.filter(n => n.type === "case_update" || n.type === "status_change").length})
             </Button>
@@ -1155,102 +1158,161 @@ const NotificationsContent = () => {
 
 // Enhanced Track Case Content
 const TrackCaseContent = () => {
-  const [selectedCase, setSelectedCase] = useState(null);
+  const { user } = useAuth();
+  const [selectedCase, setSelectedCase] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [cases, setCases] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [caseUpdates, setCaseUpdates] = useState<any[]>([]);
   
-  // Mock cases data
-  const cases = [
-    {
-      id: "12345",
-      title: "Theft Report",
-      date: "March 15, 2025",
-      status: "investigating",
-      statusText: "Under Investigation",
-      description: "Theft of laptop from vehicle at Main Street parking lot between 2-4 PM.",
-      officer: "Officer Johnson",
-      officerContact: "johnson@police.go.ke",
-      officerId: "OP-4523",
-      location: "Main Street, Nairobi",
-      category: "Theft",
-      lastUpdated: "March 20, 2025",
-      caseNumber: "CRB-23456",
-      progress: 60,
-      timeline: [
-        { date: "March 15, 2025", time: "2:30 PM", event: "Case submitted", icon: "FileText", status: "complete" },
-        { date: "March 16, 2025", time: "10:15 AM", event: "Case reviewed and accepted", icon: "CheckCircle", status: "complete" },
-        { date: "March 17, 2025", time: "3:45 PM", event: "Assigned to Officer Johnson", icon: "User", status: "complete" },
-        { date: "March 20, 2025", time: "11:30 AM", event: "Investigation started", icon: "Search", status: "current" },
-        { date: "Pending", time: "", event: "Evidence collection", icon: "FileSearch", status: "upcoming" },
-        { date: "Pending", time: "", event: "Case resolution", icon: "CheckSquare", status: "upcoming" }
-      ],
-      evidence: [
-        { id: 1, type: "image", name: "Damage photo 1", date: "March 15, 2025", submitted: true },
-        { id: 2, type: "image", name: "Damage photo 2", date: "March 15, 2025", submitted: true },
-        { id: 3, type: "document", name: "Insurance report", date: "March 18, 2025", submitted: true }
-      ]
-    },
-    {
-      id: "12346",
-      title: "Vandalism Report",
-      date: "March 10, 2025",
-      status: "resolved",
-      statusText: "Resolved",
-      description: "Graffiti on the community center wall on Park Avenue.",
-      officer: "Officer Williams",
-      officerContact: "williams@police.go.ke",
-      officerId: "OP-2187",
-      location: "Park Avenue, Nairobi",
-      category: "Vandalism",
-      lastUpdated: "March 18, 2025",
-      caseNumber: "CRB-23457",
-      progress: 100,
-      timeline: [
-        { date: "March 10, 2025", time: "4:15 PM", event: "Case submitted", icon: "FileText", status: "complete" },
-        { date: "March 11, 2025", time: "9:30 AM", event: "Case reviewed and accepted", icon: "CheckCircle", status: "complete" },
-        { date: "March 12, 2025", time: "1:45 PM", event: "Assigned to Officer Williams", icon: "User", status: "complete" },
-        { date: "March 14, 2025", time: "10:30 AM", event: "Investigation started", icon: "Search", status: "complete" },
-        { date: "March 16, 2025", time: "2:15 PM", event: "Evidence collection completed", icon: "FileSearch", status: "complete" },
-        { date: "March 18, 2025", time: "11:45 AM", event: "Case resolved", icon: "CheckSquare", status: "complete" }
-      ],
-      evidence: [
-        { id: 1, type: "image", name: "Graffiti photo 1", date: "March 10, 2025", submitted: true },
-        { id: 2, type: "video", name: "Security camera footage", date: "March 12, 2025", submitted: true }
-      ],
-      resolution: {
-        outcome: "Suspect identified and charged",
-        date: "March 18, 2025",
-        details: "The suspect was identified through security camera footage and has been charged with vandalism. The community center wall has been cleaned and restored.",
-        actionTaken: "Legal proceedings initiated"
+  // Fetch user's cases from Supabase
+  useEffect(() => {
+    const fetchUserCases = async () => {
+      if (!user?.id) return;
+      
+      try {
+        setLoading(true);
+        const userReports = await crimeReportService.getUserReports(user.id);
+        
+        // Transform the data to match the UI format
+        const formattedCases = userReports.map(report => {
+          // Calculate progress based on status
+          let progress = 0;
+          switch(report.status) {
+            case 'pending': progress = 20; break;
+            case 'under_investigation': progress = 60; break;
+            case 'resolved': progress = 100; break;
+            case 'closed': progress = 100; break;
+            case 'rejected': progress = 0; break;
+            default: progress = 10;
+          }
+          
+          return {
+            id: report.id,
+            title: report.title || `${report.incident_type} Report`,
+            date: new Date(report.created_at).toLocaleDateString(),
+            status: report.status || 'pending',
+            statusText: getStatusText(report.status || 'pending'),
+            description: report.description,
+            officer: report.assigned_officer_name || 'Not assigned yet',
+            officerContact: report.assigned_officer_email || '',
+            officerId: report.assigned_officer_id || '',
+            location: report.location || 'Not specified',
+            category: report.incident_type || 'General',
+            lastUpdated: report.updated_at ? new Date(report.updated_at).toLocaleDateString() : 'Not updated yet',
+            caseNumber: report.id.substring(0, 8),
+            progress: progress,
+            // We'll fetch the actual timeline and evidence separately
+            timeline: [],
+            evidence: []
+          };
+        });
+        
+        setCases(formattedCases);
+        setError(null);
+      } catch (err) {
+        console.error('Error fetching user cases:', err);
+        setError('Failed to load your cases. Please try again later.');
+      } finally {
+        setLoading(false);
       }
-    },
-    {
-      id: "12347",
-      title: "Noise Complaint",
-      date: "March 8, 2025",
-      status: "pending",
-      statusText: "Pending Review",
-      description: "Continuous loud music from apartment 4B after 11 PM for the last week.",
-      officer: "Unassigned",
-      officerContact: "",
-      officerId: "",
-      location: "River Road Apartments, Nairobi",
-      category: "Disturbance",
-      lastUpdated: "March 8, 2025",
-      caseNumber: "CRB-23458",
-      progress: 20,
-      timeline: [
-        { date: "March 8, 2025", time: "11:45 PM", event: "Case submitted", icon: "FileText", status: "complete" },
-        { date: "Pending", time: "", event: "Case review", icon: "CheckCircle", status: "upcoming" },
-        { date: "Pending", time: "", event: "Officer assignment", icon: "User", status: "upcoming" },
-        { date: "Pending", time: "", event: "Investigation", icon: "Search", status: "upcoming" },
-        { date: "Pending", time: "", event: "Case resolution", icon: "CheckSquare", status: "upcoming" }
-      ],
-      evidence: [
-        { id: 1, type: "audio", name: "Noise recording", date: "March 8, 2025", submitted: true }
-      ]
+    };
+    
+    fetchUserCases();
+  }, [user?.id]);
+  
+  // Fetch case updates when a case is selected
+  useEffect(() => {
+    const fetchCaseUpdates = async () => {
+      if (!selectedCase) return;
+      
+      try {
+        const updates = await caseUpdateService.getCaseUpdates(selectedCase.id);
+        
+        // Transform updates into timeline format
+        const timeline = updates.map(update => ({
+          id: update.id,
+          date: new Date(update.created_at).toLocaleDateString(),
+          time: new Date(update.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
+          event: update.update_text,
+          icon: getUpdateIcon(update.update_type),
+          status: getUpdateStatus(update, selectedCase.status)
+        }));
+        
+        // Add the initial case submission as the first timeline item
+        timeline.unshift({
+          id: 'submission',
+          date: selectedCase.date,
+          time: new Date(selectedCase.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
+          event: 'Case submitted',
+          icon: 'FileText',
+          status: 'complete'
+        });
+        
+        // Sort timeline by date (newest first)
+        timeline.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        
+        // Update the selected case with the timeline
+        setSelectedCase(prev => ({
+          ...prev,
+          timeline: timeline
+        }));
+        
+        setCaseUpdates(updates);
+      } catch (err) {
+        console.error('Error fetching case updates:', err);
+      }
+    };
+    
+    fetchCaseUpdates();
+  }, [selectedCase?.id]);
+  
+  // Helper function to get status text
+  const getStatusText = (status: string): string => {
+    switch (status) {
+      case 'pending': return 'Pending Review';
+      case 'under_investigation': return 'Under Investigation';
+      case 'resolved': return 'Resolved';
+      case 'closed': return 'Closed';
+      case 'rejected': return 'Rejected';
+      default: return 'Pending Review';
     }
-  ];
-
+  };
+  
+  // Helper function to get update icon
+  const getUpdateIcon = (type: string): string => {
+    switch (type) {
+      case 'status_change': return 'RefreshCw';
+      case 'officer_assigned': return 'User';
+      case 'evidence_received': return 'FileSearch';
+      case 'interview': return 'MessageCircle';
+      case 'investigation': return 'Search';
+      case 'resolution': return 'CheckSquare';
+      default: return 'Info';
+    }
+  };
+  
+  // Helper function to get update status
+  const getUpdateStatus = (update: any, caseStatus: string): string => {
+    const updateDate = new Date(update.created_at).getTime();
+    const now = new Date().getTime();
+    
+    // If the update is in the future, mark as upcoming
+    if (updateDate > now) return 'upcoming';
+    
+    // If the case is resolved or closed, all updates are complete
+    if (caseStatus === 'resolved' || caseStatus === 'closed') return 'complete';
+    
+    // Find the most recent update
+    const isLatestUpdate = caseUpdates.length > 0 && 
+      update.id === caseUpdates.reduce((latest, current) => {
+        return new Date(current.created_at) > new Date(latest.created_at) ? current : latest;
+      }, caseUpdates[0]).id;
+    
+    return isLatestUpdate ? 'current' : 'complete';
+  };
+  
   // Filter cases based on search
   const filteredCases = cases.filter(caseItem => 
     caseItem.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -1314,7 +1376,7 @@ const TrackCaseContent = () => {
         </div>
         
         <Button size="sm" asChild>
-          <Link to="/report">
+          <Link to="/citizen-dashboard/reports/">
             <FileText className="mr-1 h-4 w-4" />
             Submit New Report
           </Link>
@@ -2339,7 +2401,7 @@ const DashboardHome = () => {
   );
 };
 
-export default function CitizenDashboard() {
+const CitizenDashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();

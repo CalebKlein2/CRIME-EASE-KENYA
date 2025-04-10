@@ -23,7 +23,8 @@ const CitizenReportPage = () => {
         ...data,
         isAnonymous: Boolean(data.isAnonymous),
         // Add user ID only if authenticated and not anonymous
-        userId: isSignedIn && !data.isAnonymous && user?.id ? user.id : undefined,
+        // Store Clerk user ID as a string to avoid UUID validation issues
+        userId: isSignedIn && !data.isAnonymous && user?.id ? user.id.toString() : undefined,
         // Ensure location has the correct structure
         latitude: data.latitude || 0,
         longitude: data.longitude || 0,
