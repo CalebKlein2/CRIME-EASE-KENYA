@@ -20,6 +20,10 @@ interface DashboardHomeProps {
   resourcesData: any[];
   officerActivityData: any[];
   caseTypeData: any[];
+  totalCases: number;
+  activeOfficers: number;
+  caseClearance: number;
+  highPriorityCases: number;
   handleCaseClick: (id: string) => void;
 }
 
@@ -28,6 +32,10 @@ export default function StationDashboardHome({
   resourcesData, 
   officerActivityData,
   caseTypeData,
+  totalCases,
+  activeOfficers,
+  caseClearance,
+  highPriorityCases,
   handleCaseClick 
 }: DashboardHomeProps) {
   return (
@@ -36,28 +44,28 @@ export default function StationDashboardHome({
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatsCard
           title="Total Cases"
-          value="124"
+          value={totalCases}
           icon={<FileText className="h-6 w-6 text-blue-600" />}
           description="Total cases this month"
           trend={{ value: 8, isPositive: true }}
         />
         <StatsCard
           title="Active Officers"
-          value="42"
+          value={activeOfficers}
           icon={<UserCheck className="h-6 w-6 text-green-600" />}
           description="Currently on duty"
           trend={{ value: 2, isPositive: true }}
         />
         <StatsCard
           title="Case Clearance"
-          value="68%"
+          value={`${caseClearance}%`}
           icon={<Clock className="h-6 w-6 text-amber-600" />}
           description="Average this month"
           trend={{ value: 5, isPositive: false }}
         />
         <StatsCard
           title="High Priority"
-          value="6"
+          value={highPriorityCases}
           icon={<AlertTriangle className="h-6 w-6 text-red-600" />}
           description="Cases needing attention"
           trend={{ value: 1, isPositive: true }}
@@ -75,13 +83,7 @@ export default function StationDashboardHome({
               <StatisticsChart 
                 title="Crime Type Distribution"
                 type="bar"
-                data={[
-                  { name: "Theft", value: 45 },
-                  { name: "Assault", value: 28 },
-                  { name: "Fraud", value: 15 },
-                  { name: "Burglary", value: 22 },
-                  { name: "Other", value: 14 }
-                ]}
+                data={caseTypeData}
                 dataKeys={["value"]}
                 colors={["#3b82f6", "#ef4444", "#f59e0b", "#10b981", "#8b5cf6"]}
               />
