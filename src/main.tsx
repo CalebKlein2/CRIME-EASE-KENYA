@@ -19,6 +19,7 @@ if (!PUBLISHABLE_KEY) {
 // Initialize Convex client
 const convex = new ConvexReactClient(CONVEX_URL);
 
+
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <ClerkProvider 

@@ -1,7 +1,7 @@
 // @ts-nocheck
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { crimeReportService, notificationService, caseTrackingService } from '@/lib/supabaseClient';
+import { crimeReportService, notificationService, caseTrackingService, policeStationService } from '@/lib/supabaseClient';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Link, useNavigate, Routes, Route, Navigate, useLocation } from 'react-router-dom';
@@ -235,7 +235,7 @@ const ReportsContent = () => {
             Filter by Date
           </Button>
           <Button size="sm" asChild>
-            <Link to="/report">
+            <Link to="/citizen-dashboard/report">
               <FileText className="mr-1 h-4 w-4" />
               New Report
             </Link>

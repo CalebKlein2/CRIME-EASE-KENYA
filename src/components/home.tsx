@@ -108,8 +108,12 @@ const Home = () => {
   return (
     <div className="min-h-screen bg-gray-100">
       <DashboardHeader
-        userName={user?.profile?.full_name || "User"}
+        userName={
+          // @ts-ignore - Clerk's User type doesn't have profile property in TypeScript but it exists at runtime
+          user?.profile?.full_name || "User"
+        }
         userAvatar={
+          // @ts-ignore - Clerk's User type doesn't have profile property in TypeScript but it exists at runtime
           user?.profile?.avatar_url ||
           `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.id}`
         }

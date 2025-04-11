@@ -5,8 +5,13 @@ import { createClient, PostgrestError } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
 const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
+console.log('Supabase URL:', supabaseUrl ? 'Found' : 'Not found');
+console.log('Supabase Key:', supabaseKey ? 'Found' : 'Not found');
+
 if (!supabaseUrl || !supabaseKey) {
-  console.warn('Supabase credentials not found. Some features may not work.');
+  console.error('Supabase credentials missing. Check your .env file and make sure it has:');
+  console.error('VITE_SUPABASE_URL=your_supabase_url');
+  console.error('VITE_SUPABASE_ANON_KEY=your_supabase_anon_key');
 }
 
 // Define database schema types
@@ -72,6 +77,8 @@ export interface CrimeReportRecord {
   title?: string; // Optional title for display purposes
   officer_name?: string; // Name of assigned officer
   station_name?: string; // Name of assigned station
+  caseTypeId?: string; // ID of the case type
+  caseTypeName?: string; // Name of the case type
 }
 
 // Transform form data to match Supabase column naming convention
@@ -453,7 +460,7 @@ export const crimeReportService = {
       
       if (result.error) {
         console.error('Error updating crime report:', result.error);
-        throw result.error;
+        return false;
       }
       
       return true;
