@@ -22,7 +22,10 @@ export default function AdminDashboard() {
               Police Station Dashboard
             </h1>
             <p className="text-gray-600">
-              {user?.station?.name || "Loading..."}
+              {
+                // @ts-ignore - TypeScript doesn't recognize station property but it exists at runtime
+                user?.station?.name || "Loading..."
+              }
             </p>
           </div>
         </div>

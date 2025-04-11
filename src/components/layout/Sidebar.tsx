@@ -25,8 +25,14 @@ export function Sidebar({ navItems }: SidebarProps) {
             // Determine if the item is active based on pathname or the provided active state
             const isActive = item.active || 
                             pathname === item.href || 
-                            (pathname.endsWith(item.href) && item.href !== '') ||
-                            (item.href !== '/' && item.href !== '' && pathname.includes(`${item.href}/`));
+                            // Handle exact route matches
+                            (pathname === item.href) ||
+                            // Handle child routes (e.g. /citizen-dashboard/reports)
+                            (item.href !== '/' && 
+                             item.href !== '' && 
+                             pathname.startsWith(item.href + '/')) ||
+                            // Special case for index routes (e.g. /citizen-dashboard matching /citizen-dashboard/reports)
+                            (pathname.startsWith(item.href + '/') && item.href !== '' && item.href !== '/');
             
             return (
               <li key={item.href || item.label}>
@@ -34,7 +40,7 @@ export function Sidebar({ navItems }: SidebarProps) {
                   to={item.href}
                   className={`flex items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors ${
                     isActive
-                      ? "bg-blue-50 text-blue-700 font-medium dark:bg-blue-900/20 dark:text-blue-200"
+                      ? "bg-blue-100 text-blue-800 font-medium border-l-4 border-blue-600 pl-2 dark:bg-blue-900/20 dark:text-blue-200"
                       : "text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-800"
                   }`}
                 >
